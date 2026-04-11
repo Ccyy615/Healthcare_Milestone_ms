@@ -1,0 +1,44 @@
+#services:
+#  service-requester:
+#    build: ./service-requester-service
+#    ports:
+#      - "8081:8080"
+#  handyman-profile:
+#    build: ./handyman-profile-service
+#    ports:
+#      - "8082:8080"
+#  payment-context:
+#    build: ./payment-context-service
+#    ports:
+#      - "8083:8080"
+#  review_context:
+#    build: ./review_context-service
+#    ports:
+#      - "8084:8080"
+
+services:
+  api-gateway:
+    build: ./apigateway-service
+    ports:
+      - "8080:8080"  # Only this is exposed to the outside world
+    depends_on:
+      - service-requester-service
+      - handyman-profile-service
+      - payment-context-service
+      - review_context-service
+
+  service-requester-service:
+    build: ./service-requester-service
+    # No ports exposed — only reachable inside Docker network
+
+  handyman-profile-service:
+    build: ./handyman-profile-service
+    # No ports exposed — only reachable inside Docker network
+
+  payment-context-service:
+    build: ./payment-context-service
+    # No ports exposed — only reachable inside Docker network
+
+  review_context-service:
+    build: ./review_context-service
+    # No ports exposed — only reachable inside Docker network
