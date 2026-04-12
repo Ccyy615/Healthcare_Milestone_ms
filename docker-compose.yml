@@ -1,44 +1,41 @@
-#services:
-#  service-requester:
-#    build: ./service-requester-service
-#    ports:
-#      - "8081:8080"
-#  handyman-profile:
-#    build: ./handyman-profile-service
-#    ports:
-#      - "8082:8080"
-#  payment-context:
-#    build: ./payment-context-service
-#    ports:
-#      - "8083:8080"
-#  review_context:
-#    build: ./review_context-service
-#    ports:
-#      - "8084:8080"
-
 services:
-  api-gateway:
-    build: ./apigateway-service
-    ports:
-      - "8080:8080"  # Only this is exposed to the outside world
-    depends_on:
-      - appointment-service
-      - clinic-room-service
-      - doctor-service
-      - patient-service
-
-  appointment-service:
-    build: ./appointment-service
-    # No ports exposed — only reachable inside Docker network
-
-  clinic-room-service:
-    build: ./clinic-room-service
-    # No ports exposed — only reachable inside Docker network
-
-  doctor-service:
-    build: ./doctor-service
-    # No ports exposed — only reachable inside Docker network
-
-  patient-service:
+  patient:
     build: ./patient-service
-    # No ports exposed — only reachable inside Docker network
+    ports:
+      - "8081:8080"
+  doctor:
+    build: ./doctor-service
+    ports:
+      - "8082:8080"
+  clinic-room:
+    build: ./clinic-room-service
+    ports:
+      - "8083:8080"
+
+
+#services:
+#  api-gateway:
+#    build: ./apigateway-service
+#    ports:
+#      - "8080:8080"  # Only this is exposed to the outside world
+#    depends_on:
+#      - appointment-service
+#      - clinic-room-service
+#      - doctor-service
+#      - patient-service
+#
+#  appointment-service:
+#    build: ./appointment-service
+#    # No ports exposed — only reachable inside Docker network
+#
+#  clinic-room-service:
+#    build: ./clinic-room-service
+#    # No ports exposed — only reachable inside Docker network
+#
+#  doctor-service:
+#    build: ./doctor-service
+#    # No ports exposed — only reachable inside Docker network
+#
+#  patient-service:
+#    build: ./patient-service
+#    # No ports exposed — only reachable inside Docker network
