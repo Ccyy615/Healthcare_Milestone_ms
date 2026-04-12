@@ -1,6 +1,6 @@
 package com.champ.healthcare.Doctor.Domain;
 
-import com.champ.healthcare.utilities.DoctorNotEligibleException;
+import com.champ.healthcare.Doctor.utilities.DoctorNotEligibleException;
 import jakarta.persistence.*;
 import lombok.*;
 

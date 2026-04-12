@@ -18,33 +18,51 @@ repositories {
 }
 
 dependencies {
-//	implementation 'org.springframework.boot:spring-boot-starter-web'
-//	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-
     runtimeOnly 'com.mysql:mysql-connector-j'
-    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-//    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+    testImplementation 'org.testcontainers:mysql'
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    compileOnly 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
+    //    // Jakarta Validation API
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+//
+//    // Hibernate Validator (Reference Implementation)
+    implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
+//
+//    // Lombok Configuration
+    compileOnly 'org.projectlombok:lombok'
+//
+//    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    annotationProcessor 'org.projectlombok:lombok'
+//
+//    // Optional: Also enable Lombok for your Unit Tests
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+//
+    // DB (pick one)
+//    runtimeOnly 'com.h2database:h2'
+//    implementation 'org.springframework.boot:spring-boot-h2console'
+
+    // runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Testing (this gives you @DataJpaTest, MockMvc, JUnit5, Mockito, AssertJ, Hamcrest)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // Validation
-    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
-    implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
+    // Testcontainers (optional; add only if you will actually use it)
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers'
 
-
-    // Lombok Configuration
-    compileOnly 'org.projectlombok:lombok'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    // Optional: add modules depending on what you run in containers
+    // testImplementation 'org.testcontainers:postgresql'
+    // testImplementation 'org.testcontainers:mysql'
+    // testImplementation 'org.testcontainers:kafka'
+    // testImplementation 'org.testcontainers:redis'
 
 }
 

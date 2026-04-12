@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/api/v1/clinic-rooms")
@@ -24,9 +22,9 @@ public class ClinicRoomController {
     private final ClinicRoomModelAssembler clinicRoomModelAssembler;
 
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<ClinicRoomResponseDTO>>> getAllRooms() {
+    public ResponseEntity<List<ClinicRoomResponseDTO>> getAllRooms() {
         List<ClinicRoomResponseDTO> rooms = clinicRoomService.getAllRooms();
-        return ResponseEntity.ok(clinicRoomModelAssembler.toCollectionModel(rooms));
+        return ResponseEntity.ok(rooms);
     }
 
     @GetMapping("/{id}")
@@ -41,11 +39,12 @@ public class ClinicRoomController {
     ) {
         ClinicRoomResponseDTO createdRoom = clinicRoomService.createRoom(requestDTO);
 
-        EntityModel<ClinicRoomResponseDTO> model = clinicRoomModelAssembler.toModel(createdRoom);
+//        EntityModel<ClinicRoomResponseDTO> model = clinicRoomModelAssembler.toModel(createdRoom);
+//
+//        URI location = linkTo(methodOn(ClinicRoomController.class).getRoomById(createdRoom.getId())).toUri();
 
-        URI location = linkTo(methodOn(ClinicRoomController.class).getRoomById(createdRoom.getId())).toUri();
-
-        return ResponseEntity.created(location).body(model);
+//        return ResponseEntity.created(location).body(model);
+        return ResponseEntity.status(HttpStatus.CREATED).body(clinicRoomModelAssembler.toModel(createdRoom));
     }
 
     @PutMapping("/{id}")

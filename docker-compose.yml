@@ -1,16 +1,67 @@
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpwd
+      MYSQL_DATABASE: healthcare_db
+      MYSQL_USER: usr
+      MYSQL_PASSWORD: pwd
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpwd"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   patient:
     build: ./patient-service
     ports:
       - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   doctor:
     build: ./doctor-service
     ports:
       - "8082:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   clinic-room:
     build: ./clinic-room-service
     ports:
       - "8083:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+
+
+
+
+
+
+
+#services:
+#  patient:
+#    build: ./patient-service
+#    ports:
+#      - "8081:8080"
+#  doctor:
+#    build: ./doctor-service
+#    ports:
+#      - "8082:8080"
+#  clinic-room:
+#    build: ./clinic-room-service
+#    ports:
+#      - "8083:8080"
 
 
 #services:
