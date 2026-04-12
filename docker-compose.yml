@@ -22,23 +22,23 @@ services:
     ports:
       - "8080:8080"  # Only this is exposed to the outside world
     depends_on:
-      - service-requester-service
-      - handyman-profile-service
-      - payment-context-service
-      - review_context-service
+      - appointment-service
+      - clinic-room-service
+      - doctor-service
+      - patient-service
 
-  service-requester-service:
-    build: ./service-requester-service
+  appointment-service:
+    build: ./appointment-service
     # No ports exposed — only reachable inside Docker network
 
-  handyman-profile-service:
-    build: ./handyman-profile-service
+  clinic-room-service:
+    build: ./clinic-room-service
     # No ports exposed — only reachable inside Docker network
 
-  payment-context-service:
-    build: ./payment-context-service
+  doctor-service:
+    build: ./doctor-service
     # No ports exposed — only reachable inside Docker network
 
-  review_context-service:
-    build: ./review_context-service
+  patient-service:
+    build: ./patient-service
     # No ports exposed — only reachable inside Docker network
