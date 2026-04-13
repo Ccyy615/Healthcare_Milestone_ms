@@ -1,20 +1,37 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.4'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.4'
+    id 'io.spring.dependency-management' version '1.1.7'
+
+    // JaCoCo plugin - Java Code Coverage tool for measuring test coverage
+    // Generates reports showing which lines of code are tested
+    id 'jacoco'
+
 }
 
 group = 'com.champ.healthcare.ClinicRoom'
 version = '1.0.0-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+
+// ============================================================================
+// JACOCO CONFIGURATION
+// ============================================================================
+// Configure JaCoCo code coverage tool
+jacoco {
+// Specify JaCoCo version to use
+    toolVersion = "0.8.11"
+// Custom directory for JaCoCo reports (default is build/reports/jacoco)
+    reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
@@ -22,31 +39,109 @@ dependencies {
     testImplementation 'org.testcontainers:mysql'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
+    //    // Jakarta Validation API
     implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+//
+//    // Hibernate Validator (Reference Implementation)
     implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
-
+//
+//    // Lombok Configuration
     compileOnly 'org.projectlombok:lombok'
-
+//
+//    compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 //
 //    // Optional: Also enable Lombok for your Unit Tests
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
+//
+    // DB (pick one)
+//    runtimeOnly 'com.h2database:h2'
+//    implementation 'org.springframework.boot:spring-boot-h2console'
 
+    // runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Testing (this gives you @DataJpaTest, MockMvc, JUnit5, Mockito, AssertJ, Hamcrest)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Testcontainers (optional; add only if you will actually use it)
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers'
+
+    // Optional: add modules depending on what you run in containers
+    // testImplementation 'org.testcontainers:postgresql'
+    // testImplementation 'org.testcontainers:mysql'
+    // testImplementation 'org.testcontainers:kafka'
+    // testImplementation 'org.testcontainers:redis'
+
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
+
+// ============================================================================
+// JACOCO TEST REPORT CONFIGURATION
+// ============================================================================
+// Configure JaCoCo test coverage report generaƟon
+tasks.jacocoTestReport {
+    reports {
+        // Disable XML report (oŌen used by CI/CD tools like SonarQube)
+        xml.required = false
+        // Disable CSV report (spreadsheet format)
+        csv.required = false
+        // Enable HTML report and specify output directory
+        // HTML report is human-readable and can be opened in a browser
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+}
+
+// ============================================================================
+// JACOCO COVERAGE VERIFICATION
+// ============================================================================
+// Configure JaCoCo coverage verification rules
+// This task can fail the build if coverage is below specified thresholds
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        // RULE 1: Overall project coverage must be at least 50%
+        rule {
+            limit {
+                // Minimum 50% code coverage required
+                // 0.5 = 50%, 0.8 = 80%, etc.
+                minimum = 0.5
+            }
+        }
+        // RULE 2: Example of a disabled rule (for demonstration)
+        rule {
+            // This rule is currently disabled
+            enabled = false
+            // Apply this rule at the CLASS level (not method or package)
+            element = 'CLASS'
+            // Only apply to classes matching this pattern
+            includes = ['org.gradle.*']
+            limit {
+                // Count LINE coverage (opƟons: BRANCH, INSTRUCTION, METHOD, CLASS)
+                counter = 'LINE'
+                // Use TOTALCOUNT (other opƟons: COVEREDRATIO, MISSEDCOUNT, etc.)
+                value = 'TOTALCOUNT'
+                // Maximum 30% coverage for these specific classes
+                maximum = 0.3
+            }
+        }
+    }
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport) // report is always generated after tests run
+}
+//test.finalizedBy jacocoTestReport
+//check.dependsOn jacocoTestCoverageVerification
+
+
