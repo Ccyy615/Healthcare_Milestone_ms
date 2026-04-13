@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.4'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.champ.healthcare.Doctor'
@@ -17,7 +18,13 @@ repositories {
 	mavenCentral()
 }
 
+jacoco {
+	toolVersion = '0.8.11'
+	reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
+}
+
 dependencies {
+    runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.testcontainers:mysql'
 
@@ -49,4 +56,58 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy(tasks.jacocoTestReport)
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		showExceptions = true
+		showStackTraces = true
+		showStandardStreams = true
+	}
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn(tasks.test)
+
+	reports {
+		xml.required = false
+		csv.required = false
+		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+	}
+}
+
+tasks.named('jacocoTestCoverageVerification') {
+	dependsOn(tasks.test)
+
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.9
+			}
+		}
+
+		rule {
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				minimum = 0.9
+			}
+		}
+
+		rule {
+			enabled = false
+			element = 'CLASS'
+			includes = ['org.gradle.*']
+
+			limit {
+				counter = 'LINE'
+				value = 'TOTALCOUNT'
+				maximum = 0.3
+			}
+		}
+	}
+}
+
+tasks.named('check') {
+	dependsOn(tasks.jacocoTestCoverageVerification)
 }

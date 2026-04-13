@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -49,12 +50,9 @@ public class PatientServiceImpl implements PatientService {
 
         validatePatientInvariant(patientRequestDTO);
 
-        String email = patientRequestDTO.getContactInfo() != null
-                ? patientRequestDTO.getContactInfo().getEmail()
-                : null;
+        String email = patientRequestDTO.getContactInfo().getEmail();
 
-        if (email != null && !email.isBlank()
-                && patientRepository.existsByContactInfoEmail(email)) {
+        if (StringUtils.hasText(email) && patientRepository.existsByContactInfoEmail(email)) {
             throw new DuplicateEmailException("Email already exists: " + email);
         }
 
@@ -73,15 +71,10 @@ public class PatientServiceImpl implements PatientService {
         Patient existingPatient = patientRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
 
-        String newEmail = patientRequestDTO.getContactInfo() != null
-                ? patientRequestDTO.getContactInfo().getEmail()
-                : null;
+        String newEmail = patientRequestDTO.getContactInfo().getEmail();
+        String currentEmail = existingPatient.getContactInfo().getEmail();
 
-        String currentEmail = existingPatient.getContactInfo() != null
-                ? existingPatient.getContactInfo().getEmail()
-                : null;
-
-        if (newEmail != null && !newEmail.isBlank()
+        if (StringUtils.hasText(newEmail)
                 && !newEmail.equals(currentEmail)
                 && patientRepository.existsByContactInfoEmail(newEmail)) {
             throw new DuplicateEmailException("Email already exists: " + newEmail);
@@ -116,8 +109,8 @@ public class PatientServiceImpl implements PatientService {
             );
         }
 
-        boolean hasEmail = contactInfo.getEmail() != null && !contactInfo.getEmail().isBlank();
-        boolean hasPhone = contactInfo.getPhone() != null && !contactInfo.getPhone().isBlank();
+        boolean hasEmail = StringUtils.hasText(contactInfo.getEmail());
+        boolean hasPhone = StringUtils.hasText(contactInfo.getPhone());
 
         if (!hasEmail && !hasPhone) {
             throw new IllegalArgumentException(

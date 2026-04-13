@@ -1,7 +1,13 @@
 rootProject.name = 'milestone-healthcare-ms'
 
-include 'appointment-service'
-include 'clinic-room-service'
-include 'doctor-service'
-include 'patient-service'
-include 'apigateway-service'
+[
+        'appointment-service',
+        'clinic-room-service',
+        'doctor-service',
+        'patient-service',
+        'apigateway-service'
+].each { serviceName ->
+    if (file(serviceName).isDirectory()) {
+        include serviceName
+    }
+}

@@ -2,6 +2,7 @@ package com.champ.healthcare.Patient.Domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 
@@ -116,8 +117,8 @@ public class Patient {
             );
         }
 
-        boolean hasEmail = contactInfo.getEmail() != null && !contactInfo.getEmail().isBlank();
-        boolean hasPhone = contactInfo.getPhone() != null && !contactInfo.getPhone().isBlank();
+        boolean hasEmail = StringUtils.hasText(contactInfo.getEmail());
+        boolean hasPhone = StringUtils.hasText(contactInfo.getPhone());
 
         if (!hasEmail && !hasPhone) {
             throw new IllegalArgumentException(
@@ -127,7 +128,7 @@ public class Patient {
     }
 
     private void validateEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
+        if (!StringUtils.hasText(email)) {
             throw new IllegalArgumentException("Email is required");
         }
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
