@@ -140,6 +140,17 @@ tasks.jacocoTestCoverageVerification {
 
 tasks.test {
     finalizedBy(tasks.jacocoTestReport) // report is always generated after tests run
+    // Configure test output logging
+    testLogging {
+        // Show which tests passed, were skipped, or failed
+        events("passed", "skipped", "failed")
+        // Display full exception messages when tests fail
+        showExceptions = true
+        // Display stack traces for debugging failed tests
+        showStackTraces = true
+        // Show System.out and System.err output from tests
+        showStandardStreams = true
+    }
 }
 //test.finalizedBy jacocoTestReport
 //check.dependsOn jacocoTestCoverageVerification
