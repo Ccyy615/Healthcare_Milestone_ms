@@ -26,10 +26,8 @@ jacoco {
 dependencies {
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'com.mysql:mysql-connector-j'
-    testImplementation 'org.testcontainers:mysql'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -59,17 +57,8 @@ dependencies {
 
     // Testing (this gives you @DataJpaTest, MockMvc, JUnit5, Mockito, AssertJ, Hamcrest)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webflux'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
-    // Testcontainers (optional; add only if you will actually use it)
-    testImplementation 'org.testcontainers:junit-jupiter'
-    testImplementation 'org.testcontainers:testcontainers'
-
-    // Optional: add modules depending on what you run in containers
-    // testImplementation 'org.testcontainers:postgresql'
-    // testImplementation 'org.testcontainers:mysql'
-    // testImplementation 'org.testcontainers:kafka'
-    // testImplementation 'org.testcontainers:redis'
 
 }
 

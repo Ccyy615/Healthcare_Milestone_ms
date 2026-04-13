@@ -3,16 +3,11 @@ package com.champ.healthcare.Patient.PresentationLayer;
 import com.champ.healthcare.Patient.BusinessLogicLayer.PatientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
-
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/api/v1/patients")
@@ -20,44 +15,44 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class PatientController {
 
     private final PatientService patientService;
-    private final PatientModelAssembler patientModelAssembler;
 
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<PatientResponseDTO>>> getAllPatients() {
-        List<PatientResponseDTO> patients = patientService.getAllPatients();
-        return ResponseEntity.ok(patientModelAssembler.toCollectionModel(patients));
+    public ResponseEntity<List<PatientResponseDTO>> getAllPatients() {
+        return ResponseEntity.ok(patientService.getAllPatients());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<PatientResponseDTO>> getPatientById(@PathVariable Long id) {
-        PatientResponseDTO patient = patientService.getPatientById(id);
-        return ResponseEntity.ok(patientModelAssembler.toModel(patient));
+    public ResponseEntity<PatientResponseDTO> getPatientById(@PathVariable Long id) {
+        return ResponseEntity.ok(patientService.getPatientById(id));
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<PatientResponseDTO>> createPatient(
+    public ResponseEntity<PatientResponseDTO> createPatient(
             @Valid @RequestBody PatientRequestDTO patientRequestDTO
     ) {
         PatientResponseDTO createdPatient = patientService.createPatient(patientRequestDTO);
-
-        EntityModel<PatientResponseDTO> model = patientModelAssembler.toModel(createdPatient);
-        URI location = linkTo(methodOn(PatientController.class).getPatientById(createdPatient.getId())).toUri();
-
-        return ResponseEntity.created(location).body(model);
+        URI location = URI.create("/api/v1/patients/" + createdPatient.getId());
+        return ResponseEntity.created(location).body(createdPatient);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EntityModel<PatientResponseDTO>> updatePatient(
+    public ResponseEntity<PatientResponseDTO> updatePatient(
             @PathVariable Long id,
             @Valid @RequestBody PatientRequestDTO patientRequestDTO
     ) {
-        PatientResponseDTO updatedPatient = patientService.updatePatient(id, patientRequestDTO);
-        return ResponseEntity.ok(patientModelAssembler.toModel(updatedPatient));
+        return ResponseEntity.ok(patientService.updatePatient(id, patientRequestDTO));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<PatientResponseDTO> updatePatientStatus(
+            @PathVariable Long id,
+            @RequestBody PatientStatusPatchDTO patchDTO
+    ) {
+        return ResponseEntity.ok(patientService.updatePatientStatus(id, patchDTO.getStatus()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<EntityModel<PatientResponseDTO>> deletePatientById(@PathVariable Long id) {
-        PatientResponseDTO deletedPatient = patientService.deletePatientById(id);
-        return ResponseEntity.ok(patientModelAssembler.toModel(deletedPatient));
+    public ResponseEntity<PatientResponseDTO> deletePatientById(@PathVariable Long id) {
+        return ResponseEntity.ok(patientService.deletePatientById(id));
     }
 }

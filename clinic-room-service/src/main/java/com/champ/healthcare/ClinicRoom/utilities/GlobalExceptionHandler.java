@@ -31,9 +31,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
-    @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<ApiErrorResponse> handleDuplicateEmail(
-            DuplicateEmailException ex,
+    @ExceptionHandler(DuplicateRoomNumberException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicateRoomNumber(
+            DuplicateRoomNumberException ex,
             HttpServletRequest request
     ) {
         ApiErrorResponse response = ApiErrorResponse.builder()

@@ -3,6 +3,7 @@ package com.champ.healthcare.Patient.BusinessLogicLayer;
 import com.champ.healthcare.Patient.DataAccessLayer.PatientRepository;
 import com.champ.healthcare.Patient.Domain.ContactInfo;
 import com.champ.healthcare.Patient.Domain.Patient;
+import com.champ.healthcare.Patient.Domain.PatientStatus;
 import com.champ.healthcare.Patient.Mapper.PatientMapper;
 import com.champ.healthcare.Patient.PresentationLayer.PatientRequestDTO;
 import com.champ.healthcare.Patient.PresentationLayer.PatientResponseDTO;
@@ -85,6 +86,28 @@ public class PatientServiceImpl implements PatientService {
         updatedPatientData.setPatientId(existingPatient.getPatientId());
 
         Patient savedPatient = patientRepository.save(updatedPatientData);
+        return patientMapper.toResponseDTO(savedPatient);
+    }
+
+    @Override
+    @Transactional
+    public PatientResponseDTO updatePatientStatus(Long id, PatientStatus status) {
+        log.info("Patching patient status for id: {}", id);
+
+        if (status == null) {
+            throw new IllegalArgumentException("Patient status is required.");
+        }
+
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + id));
+
+        if (status == PatientStatus.ACTIVE) {
+            patient.activate();
+        } else {
+            patient.deactivate();
+        }
+
+        Patient savedPatient = patientRepository.save(patient);
         return patientMapper.toResponseDTO(savedPatient);
     }
 

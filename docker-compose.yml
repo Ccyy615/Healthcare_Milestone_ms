@@ -1,92 +1,81 @@
 services:
-  mysql:
+  patient-db:
     image: mysql:8.0
-    container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpwd
-      MYSQL_DATABASE: healthcare_db
-      MYSQL_USER: usr
-      MYSQL_PASSWORD: pwd
+      MYSQL_ROOT_PASSWORD: patient_root_pwd
+      MYSQL_DATABASE: patient_service
+      MYSQL_USER: patient_user
+      MYSQL_PASSWORD: patient_pwd
     volumes:
-      - mysql_data:/var/lib/mysql
+      - patient_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpwd"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppatient_root_pwd"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
-  patient:
+  doctor-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: doctor_service
+      POSTGRES_USER: doctor_user
+      POSTGRES_PASSWORD: doctor_pwd
+    volumes:
+      - doctor_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doctor_user -d doctor_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  clinic-room-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: clinic_room_service
+      POSTGRES_USER: clinic_room_user
+      POSTGRES_PASSWORD: clinic_room_pwd
+    volumes:
+      - clinic_room_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinic_room_user -d clinic_room_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  patient-service:
     build: ./patient-service
     ports:
       - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      mysql:
+      patient-db:
         condition: service_healthy
 
-  doctor:
+  doctor-service:
     build: ./doctor-service
     ports:
       - "8082:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      mysql:
+      doctor-db:
         condition: service_healthy
 
-  clinic-room:
+  clinic-room-service:
     build: ./clinic-room-service
     ports:
       - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      mysql:
+      clinic-room-db:
         condition: service_healthy
 
 volumes:
-  mysql_data:
-
-
-
-
-
-
-
-#services:
-#  patient:
-#    build: ./patient-service
-#    ports:
-#      - "8081:8080"
-#  doctor:
-#    build: ./doctor-service
-#    ports:
-#      - "8082:8080"
-#  clinic-room:
-#    build: ./clinic-room-service
-#    ports:
-#      - "8083:8080"
-
-
-#services:
-#  api-gateway:
-#    build: ./apigateway-service
-#    ports:
-#      - "8080:8080"  # Only this is exposed to the outside world
-#    depends_on:
-#      - appointment-service
-#      - clinic-room-service
-#      - doctor-service
-#      - patient-service
-#
-#  appointment-service:
-#    build: ./appointment-service
-#    # No ports exposed — only reachable inside Docker network
-#
-#  clinic-room-service:
-#    build: ./clinic-room-service
-#    # No ports exposed — only reachable inside Docker network
-#
-#  doctor-service:
-#    build: ./doctor-service
-#    # No ports exposed — only reachable inside Docker network
-#
-#  patient-service:
-#    build: ./patient-service
-#    # No ports exposed — only reachable inside Docker network
+  patient_mysql_data:
+  doctor_postgres_data:
+  clinic_room_postgres_data:

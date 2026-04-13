@@ -4,9 +4,9 @@ import com.champ.healthcare.ClinicRoom.BusinessLogicLayer.ClinicRoomService;
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoomStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.hateoas.EntityModel;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -15,93 +15,107 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ClinicRoomControllerTest {
 
     @Mock
     private ClinicRoomService clinicRoomService;
 
-    @Mock
-    private ClinicRoomModelAssembler clinicRoomModelAssembler;
-
     private ClinicRoomController clinicRoomController;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        clinicRoomController = new ClinicRoomController(clinicRoomService, clinicRoomModelAssembler);
+        clinicRoomController = new ClinicRoomController(clinicRoomService);
     }
 
     @Test
     void getAllRoomsReturnsOkResponse() {
-        List<ClinicRoomResponseDTO> rooms = List.of(ClinicRoomResponseDTO.builder().roomNumber("101").build());
-
-        when(clinicRoomService.getAllRooms()).thenReturn(rooms);
+        ClinicRoomResponseDTO room = roomResponse();
+        when(clinicRoomService.getAllRooms()).thenReturn(List.of(room));
 
         ResponseEntity<List<ClinicRoomResponseDTO>> response = clinicRoomController.getAllRooms();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(rooms);
+        assertThat(response.getBody()).containsExactly(room);
     }
 
     @Test
     void getRoomByIdReturnsOkResponse() {
-        ClinicRoomResponseDTO room = ClinicRoomResponseDTO.builder().id(1L).roomNumber("101").build();
-        EntityModel<ClinicRoomResponseDTO> model = EntityModel.of(room);
-
+        ClinicRoomResponseDTO room = roomResponse();
         when(clinicRoomService.getRoomById(1L)).thenReturn(room);
-        when(clinicRoomModelAssembler.toModel(room)).thenReturn(model);
 
-        ResponseEntity<EntityModel<ClinicRoomResponseDTO>> response = clinicRoomController.getRoomById(1L);
+        ResponseEntity<ClinicRoomResponseDTO> response = clinicRoomController.getRoomById(1L);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isSameAs(model);
+        assertThat(response.getBody()).isEqualTo(room);
     }
 
     @Test
     void createRoomReturnsCreatedResponse() {
-        ClinicRoomRequestDTO request = ClinicRoomRequestDTO.builder()
-                .roomName("Consultation Room")
-                .roomNumber("101")
-                .roomStatus(ClinicRoomStatus.AVAILABLE)
-                .build();
-        ClinicRoomResponseDTO room = ClinicRoomResponseDTO.builder().id(1L).roomNumber("101").build();
-        EntityModel<ClinicRoomResponseDTO> model = EntityModel.of(room);
-
+        ClinicRoomRequestDTO request = roomRequest();
+        ClinicRoomResponseDTO room = roomResponse();
         when(clinicRoomService.createRoom(request)).thenReturn(room);
-        when(clinicRoomModelAssembler.toModel(room)).thenReturn(model);
 
-        ResponseEntity<EntityModel<ClinicRoomResponseDTO>> response = clinicRoomController.createRoom(request);
+        ResponseEntity<ClinicRoomResponseDTO> response = clinicRoomController.createRoom(request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isSameAs(model);
+        assertThat(response.getHeaders().getLocation()).hasToString("/api/v1/clinic-rooms/1");
+        assertThat(response.getBody()).isEqualTo(room);
     }
 
     @Test
     void updateRoomReturnsOkResponse() {
-        ClinicRoomRequestDTO request = ClinicRoomRequestDTO.builder().roomNumber("101").build();
-        ClinicRoomResponseDTO room = ClinicRoomResponseDTO.builder().id(2L).roomNumber("101").build();
-        EntityModel<ClinicRoomResponseDTO> model = EntityModel.of(room);
-
+        ClinicRoomRequestDTO request = roomRequest();
+        ClinicRoomResponseDTO room = roomResponse();
         when(clinicRoomService.updateRoom(2L, request)).thenReturn(room);
-        when(clinicRoomModelAssembler.toModel(room)).thenReturn(model);
 
-        ResponseEntity<EntityModel<ClinicRoomResponseDTO>> response = clinicRoomController.updateRoom(2L, request);
+        ResponseEntity<ClinicRoomResponseDTO> response = clinicRoomController.updateRoom(2L, request);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isSameAs(model);
+        assertThat(response.getBody()).isEqualTo(room);
+    }
+
+    @Test
+    void updateRoomStatusReturnsOkResponse() {
+        ClinicRoomResponseDTO room = roomResponse();
+        room.setRoomStatus(ClinicRoomStatus.OUT_OF_SERVICE);
+        when(clinicRoomService.updateRoomStatus(2L, ClinicRoomStatus.OUT_OF_SERVICE)).thenReturn(room);
+
+        ResponseEntity<ClinicRoomResponseDTO> response = clinicRoomController.updateRoomStatus(
+                2L,
+                new ClinicRoomStatusPatchDTO(ClinicRoomStatus.OUT_OF_SERVICE)
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(room);
     }
 
     @Test
     void deleteRoomReturnsOkResponse() {
-        ClinicRoomResponseDTO room = ClinicRoomResponseDTO.builder().id(3L).roomNumber("102").build();
-        EntityModel<ClinicRoomResponseDTO> model = EntityModel.of(room);
-
+        ClinicRoomResponseDTO room = roomResponse();
         when(clinicRoomService.deleteRoom(3L)).thenReturn(room);
-        when(clinicRoomModelAssembler.toModel(room)).thenReturn(model);
 
-        ResponseEntity<EntityModel<ClinicRoomResponseDTO>> response = clinicRoomController.deleteRoom(3L);
+        ResponseEntity<ClinicRoomResponseDTO> response = clinicRoomController.deleteRoom(3L);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isSameAs(model);
+        assertThat(response.getBody()).isEqualTo(room);
+    }
+
+    private ClinicRoomRequestDTO roomRequest() {
+        return ClinicRoomRequestDTO.builder()
+                .roomName("Consultation Room")
+                .roomNumber("101")
+                .roomStatus(ClinicRoomStatus.AVAILABLE)
+                .build();
+    }
+
+    private ClinicRoomResponseDTO roomResponse() {
+        return ClinicRoomResponseDTO.builder()
+                .id(1L)
+                .roomId("room-1")
+                .roomName("Consultation Room")
+                .roomNumber("101")
+                .roomStatus(ClinicRoomStatus.AVAILABLE)
+                .build();
     }
 }

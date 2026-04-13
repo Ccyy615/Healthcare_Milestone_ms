@@ -140,6 +140,15 @@ public class DoctorService {
     }
 
     @Transactional
+    public DoctorResponseDTO updateDoctorActivation(String doctorId, Boolean active) {
+        if (active == null) {
+            throw new IllegalArgumentException("Doctor activation flag is required.");
+        }
+
+        return active ? activateDoctor(doctorId) : deactivateDoctor(doctorId);
+    }
+
+    @Transactional
     public DoctorResponseDTO addSpeciality(String doctorId, Speciality specialityDTO) {
         log.info("Adding speciality {} to doctor {}", specialityDTO.getSpeciality(), doctorId);
 

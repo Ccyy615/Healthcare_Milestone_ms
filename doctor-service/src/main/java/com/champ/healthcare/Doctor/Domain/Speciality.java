@@ -19,6 +19,7 @@ public class Speciality {
     @Column(name = "speciality_name")
     private String speciality;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "proficiency_level")
     private ProficiencyLevel proficiencyLevel;
 

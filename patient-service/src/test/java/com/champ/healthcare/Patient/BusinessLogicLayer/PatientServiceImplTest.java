@@ -228,6 +228,55 @@ class PatientServiceImplTest {
     }
 
     @Test
+    void updatePatientStatusUpdatesAndSavesPatient() {
+        Patient existing = patient(10L, "john@example.com");
+        PatientResponseDTO response = response(10L, "john@example.com");
+        response.setStatus(PatientStatus.INACTIVE);
+
+        when(patientRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(patientRepository.save(existing)).thenReturn(existing);
+        when(patientMapper.toResponseDTO(existing)).thenReturn(response);
+
+        PatientResponseDTO result = patientService.updatePatientStatus(10L, PatientStatus.INACTIVE);
+
+        assertThat(result).isSameAs(response);
+        assertThat(existing.getStatus()).isEqualTo(PatientStatus.INACTIVE);
+    }
+
+    @Test
+    void updatePatientStatusActivatesAndSavesPatient() {
+        Patient existing = patient(10L, "john@example.com");
+        existing.setStatus(PatientStatus.INACTIVE);
+        PatientResponseDTO response = response(10L, "john@example.com");
+        response.setStatus(PatientStatus.ACTIVE);
+
+        when(patientRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(patientRepository.save(existing)).thenReturn(existing);
+        when(patientMapper.toResponseDTO(existing)).thenReturn(response);
+
+        PatientResponseDTO result = patientService.updatePatientStatus(10L, PatientStatus.ACTIVE);
+
+        assertThat(result).isSameAs(response);
+        assertThat(existing.getStatus()).isEqualTo(PatientStatus.ACTIVE);
+    }
+
+    @Test
+    void updatePatientStatusThrowsWhenPatientDoesNotExist() {
+        when(patientRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> patientService.updatePatientStatus(10L, PatientStatus.ACTIVE))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Patient not found with id: 10");
+    }
+
+    @Test
+    void updatePatientStatusThrowsWhenStatusIsMissing() {
+        assertThatThrownBy(() -> patientService.updatePatientStatus(10L, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Patient status is required.");
+    }
+
+    @Test
     void deletePatientThrowsWhenMissing() {
         when(patientRepository.findById(7L)).thenReturn(Optional.empty());
 

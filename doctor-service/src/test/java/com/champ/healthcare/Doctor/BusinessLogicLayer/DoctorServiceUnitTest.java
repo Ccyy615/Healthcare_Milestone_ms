@@ -220,6 +220,47 @@ class DoctorServiceUnitTest {
     }
 
     @Test
+    void updateDoctorActivationDelegatesToDeactivateWhenFalse() {
+        Doctor doctor = doctor("doctor-1");
+        doctor.setIsActive(true);
+        DoctorResponseDTO response = response("doctor-1");
+
+        when(doctorRepository.findByDoctorId_DoctorId("doctor-1")).thenReturn(Optional.of(doctor));
+        when(doctorRepository.save(doctor)).thenReturn(doctor);
+        when(doctorMapper.toResponseDTO(doctor)).thenReturn(response);
+
+        DoctorResponseDTO result = doctorService.updateDoctorActivation("doctor-1", false);
+
+        assertThat(result).isSameAs(response);
+        assertThat(doctor.getIsActive()).isFalse();
+    }
+
+    @Test
+    void updateDoctorActivationDelegatesToActivateWhenTrue() {
+        Doctor doctor = doctor("doctor-1");
+        doctor.setIsActive(false);
+        doctor.setSpeciality(new ArrayList<>(List.of(new Speciality("Cardiology", ProficiencyLevel.EXPERT))));
+        doctor.setLicense(new License("Valid License", LicenseStatus.VALID, LocalDateTime.now().minusDays(1)));
+        DoctorResponseDTO response = response("doctor-1");
+
+        when(doctorRepository.findByDoctorId_DoctorId("doctor-1")).thenReturn(Optional.of(doctor));
+        when(doctorRepository.save(doctor)).thenReturn(doctor);
+        when(doctorMapper.toResponseDTO(doctor)).thenReturn(response);
+
+        DoctorResponseDTO result = doctorService.updateDoctorActivation("doctor-1", true);
+
+        assertThat(result).isSameAs(response);
+        assertThat(doctor.getIsActive()).isTrue();
+    }
+
+    @Test
+    void updateDoctorActivationThrowsWhenFlagIsMissing() {
+        assertThatThrownBy(() -> doctorService.updateDoctorActivation("doctor-1", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Doctor activation flag is required.");
+    }
+
+    @Test
     void addSpecialityThrowsWhenDoctorIsMissing() {
         when(doctorRepository.findByDoctorId_DoctorId("doctor-1")).thenReturn(Optional.empty());
 

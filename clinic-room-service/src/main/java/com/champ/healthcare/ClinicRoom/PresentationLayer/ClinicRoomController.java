@@ -3,8 +3,6 @@ package com.champ.healthcare.ClinicRoom.PresentationLayer;
 import com.champ.healthcare.ClinicRoom.BusinessLogicLayer.ClinicRoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +17,6 @@ import java.util.List;
 public class ClinicRoomController {
 
     private final ClinicRoomService clinicRoomService;
-    private final ClinicRoomModelAssembler clinicRoomModelAssembler;
 
     @GetMapping
     public ResponseEntity<List<ClinicRoomResponseDTO>> getAllRooms() {
@@ -28,37 +25,37 @@ public class ClinicRoomController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<ClinicRoomResponseDTO>> getRoomById(@PathVariable Long id) {
-        ClinicRoomResponseDTO room = clinicRoomService.getRoomById(id);
-        return ResponseEntity.ok(clinicRoomModelAssembler.toModel(room));
+    public ResponseEntity<ClinicRoomResponseDTO> getRoomById(@PathVariable Long id) {
+        return ResponseEntity.ok(clinicRoomService.getRoomById(id));
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<ClinicRoomResponseDTO>> createRoom(
+    public ResponseEntity<ClinicRoomResponseDTO> createRoom(
             @Valid @RequestBody ClinicRoomRequestDTO requestDTO
     ) {
         ClinicRoomResponseDTO createdRoom = clinicRoomService.createRoom(requestDTO);
-
-//        EntityModel<ClinicRoomResponseDTO> model = clinicRoomModelAssembler.toModel(createdRoom);
-//
-//        URI location = linkTo(methodOn(ClinicRoomController.class).getRoomById(createdRoom.getId())).toUri();
-
-//        return ResponseEntity.created(location).body(model);
-        return ResponseEntity.status(HttpStatus.CREATED).body(clinicRoomModelAssembler.toModel(createdRoom));
+        URI location = URI.create("/api/v1/clinic-rooms/" + createdRoom.getId());
+        return ResponseEntity.created(location).body(createdRoom);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EntityModel<ClinicRoomResponseDTO>> updateRoom(
+    public ResponseEntity<ClinicRoomResponseDTO> updateRoom(
             @PathVariable Long id,
             @Valid @RequestBody ClinicRoomRequestDTO requestDTO
     ) {
-        ClinicRoomResponseDTO updatedRoom = clinicRoomService.updateRoom(id, requestDTO);
-        return ResponseEntity.ok(clinicRoomModelAssembler.toModel(updatedRoom));
+        return ResponseEntity.ok(clinicRoomService.updateRoom(id, requestDTO));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ClinicRoomResponseDTO> updateRoomStatus(
+            @PathVariable Long id,
+            @RequestBody ClinicRoomStatusPatchDTO patchDTO
+    ) {
+        return ResponseEntity.ok(clinicRoomService.updateRoomStatus(id, patchDTO.getRoomStatus()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<EntityModel<ClinicRoomResponseDTO>> deleteRoom(@PathVariable Long id) {
-        ClinicRoomResponseDTO deletedRoom = clinicRoomService.deleteRoom(id);
-        return ResponseEntity.status(HttpStatus.OK).body(clinicRoomModelAssembler.toModel(deletedRoom));
+    public ResponseEntity<ClinicRoomResponseDTO> deleteRoom(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(clinicRoomService.deleteRoom(id));
     }
 }

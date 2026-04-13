@@ -4,8 +4,6 @@ import com.champ.healthcare.Doctor.BusinessLogicLayer.DoctorService;
 import com.champ.healthcare.Doctor.Domain.Speciality;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,107 +11,98 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
 @RestController
 @RequestMapping("/api/v1/doctors")
 @RequiredArgsConstructor
 public class DoctorController {
 
     private final DoctorService doctorService;
-    private final DoctorModelAssembler doctorModelAssembler;
 
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<DoctorResponseDTO>>> getAllDoctors() {
-        List<DoctorResponseDTO> doctors = doctorService.getAllDoctors();
-        return ResponseEntity.ok(doctorModelAssembler.toCollectionModel(doctors));
+    public ResponseEntity<List<DoctorResponseDTO>> getAllDoctors() {
+        return ResponseEntity.ok(doctorService.getAllDoctors());
     }
 
     @GetMapping("/{doctorId}")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> getDoctorById(@PathVariable String doctorId) {
-        DoctorResponseDTO doctor = doctorService.getDoctorById(doctorId);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(doctor));
+    public ResponseEntity<DoctorResponseDTO> getDoctorById(@PathVariable String doctorId) {
+        return ResponseEntity.ok(doctorService.getDoctorById(doctorId));
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> createDoctor(
+    public ResponseEntity<DoctorResponseDTO> createDoctor(
             @Valid @RequestBody DoctorRequestDTO doctorRequestDTO
     ) {
         DoctorResponseDTO createdDoctor = doctorService.createDoctor(doctorRequestDTO);
-
-        EntityModel<DoctorResponseDTO> model = doctorModelAssembler.toModel(createdDoctor);
-        URI location = linkTo(methodOn(DoctorController.class).getDoctorById(createdDoctor.getDoctorId())).toUri();
-
-        return ResponseEntity.created(location).body(model);
+        URI location = URI.create("/api/v1/doctors/" + createdDoctor.getDoctorId());
+        return ResponseEntity.created(location).body(createdDoctor);
     }
 
     @PutMapping("/{doctorId}")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> updateDoctor(
+    public ResponseEntity<DoctorResponseDTO> updateDoctor(
             @PathVariable String doctorId,
             @Valid @RequestBody DoctorRequestDTO doctorRequestDTO
     ) {
-        DoctorResponseDTO updatedDoctor = doctorService.updateDoctor(doctorId, doctorRequestDTO);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(updatedDoctor));
+        return ResponseEntity.ok(doctorService.updateDoctor(doctorId, doctorRequestDTO));
     }
 
     @GetMapping("/active")
-    public ResponseEntity<CollectionModel<EntityModel<DoctorResponseDTO>>> getActiveDoctors() {
-        List<DoctorResponseDTO> doctors = doctorService.getActiveDoctors();
-        return ResponseEntity.ok(doctorModelAssembler.toCollectionModel(doctors));
+    public ResponseEntity<List<DoctorResponseDTO>> getActiveDoctors() {
+        return ResponseEntity.ok(doctorService.getActiveDoctors());
     }
 
     @GetMapping("/active/speciality/{specialityName}")
-    public ResponseEntity<CollectionModel<EntityModel<DoctorResponseDTO>>> getActiveDoctorBySpeciality(
+    public ResponseEntity<List<DoctorResponseDTO>> getActiveDoctorBySpeciality(
             @PathVariable String specialityName
     ) {
-        List<DoctorResponseDTO> doctors = doctorService.getActiveDoctorBySpeciality(specialityName);
-        return ResponseEntity.ok(doctorModelAssembler.toCollectionModel(doctors));
+        return ResponseEntity.ok(doctorService.getActiveDoctorBySpeciality(specialityName));
     }
 
     @PostMapping("/{doctorId}/activate")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> activateDoctor(@PathVariable String doctorId) {
-        DoctorResponseDTO doctor = doctorService.activateDoctor(doctorId);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(doctor));
+    public ResponseEntity<DoctorResponseDTO> activateDoctor(@PathVariable String doctorId) {
+        return ResponseEntity.ok(doctorService.activateDoctor(doctorId));
     }
 
     @PostMapping("/{doctorId}/deactivate")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> deactivateDoctor(@PathVariable String doctorId) {
-        DoctorResponseDTO doctor = doctorService.deactivateDoctor(doctorId);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(doctor));
+    public ResponseEntity<DoctorResponseDTO> deactivateDoctor(@PathVariable String doctorId) {
+        return ResponseEntity.ok(doctorService.deactivateDoctor(doctorId));
+    }
+
+    @PatchMapping("/{doctorId}/activation")
+    public ResponseEntity<DoctorResponseDTO> updateDoctorActivation(
+            @PathVariable String doctorId,
+            @RequestBody DoctorActivationPatchDTO patchDTO
+    ) {
+        return ResponseEntity.ok(doctorService.updateDoctorActivation(doctorId, patchDTO.getActive()));
     }
 
     @PostMapping("/{doctorId}/speciality")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> addSpeciality(
+    public ResponseEntity<DoctorResponseDTO> addSpeciality(
             @PathVariable String doctorId,
             @Valid @RequestBody Speciality specialityDTO
     ) {
-        DoctorResponseDTO doctor = doctorService.addSpeciality(doctorId, specialityDTO);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(doctor));
+        return ResponseEntity.ok(doctorService.addSpeciality(doctorId, specialityDTO));
     }
 
     @DeleteMapping("/{doctorId}/speciality/{specialityName}")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> removeSpeciality(
+    public ResponseEntity<DoctorResponseDTO> removeSpeciality(
             @PathVariable String doctorId,
             @PathVariable String specialityName
     ) {
-        DoctorResponseDTO doctor = doctorService.removeSpeciality(doctorId, specialityName);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(doctor));
+        return ResponseEntity.ok(doctorService.removeSpeciality(doctorId, specialityName));
     }
 
     @PostMapping("/{doctorId}/license")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> addLicense(
+    public ResponseEntity<DoctorResponseDTO> addLicense(
             @PathVariable String doctorId,
             @Valid @RequestBody LicenseRequestDTO requestDTO
     ) {
-        DoctorResponseDTO doctor = doctorService.addLicense(doctorId, requestDTO);
-        return ResponseEntity.ok(doctorModelAssembler.toModel(doctor));
+        return ResponseEntity.ok(doctorService.addLicense(doctorId, requestDTO));
     }
 
     @DeleteMapping("/{doctorId}")
-    public ResponseEntity<EntityModel<DoctorResponseDTO>> deleteDoctor(@PathVariable String doctorId) {
+    public ResponseEntity<DoctorResponseDTO> deleteDoctor(@PathVariable String doctorId) {
         DoctorResponseDTO doctor = doctorService.getDoctorById(doctorId);
         doctorService.deleteDoctor(doctorId);
-        return ResponseEntity.status(HttpStatus.OK).body(doctorModelAssembler.toModel(doctor));
+        return ResponseEntity.status(HttpStatus.OK).body(doctor);
     }
 }

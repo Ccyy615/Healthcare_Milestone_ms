@@ -7,6 +7,7 @@ import com.champ.healthcare.ClinicRoom.Domain.ClinicRoomStatus;
 import com.champ.healthcare.ClinicRoom.Mapper.ClinicRoomMapper;
 import com.champ.healthcare.ClinicRoom.PresentationLayer.ClinicRoomRequestDTO;
 import com.champ.healthcare.ClinicRoom.PresentationLayer.ClinicRoomResponseDTO;
+import com.champ.healthcare.ClinicRoom.utilities.DuplicateRoomNumberException;
 import com.champ.healthcare.ClinicRoom.utilities.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,7 +141,7 @@ class ClinicRoomServiceImplTest {
         when(clinicRoomRepository.existsByRoomNumber("101")).thenReturn(true);
 
         assertThatThrownBy(() -> clinicRoomService.createRoom(request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(DuplicateRoomNumberException.class)
                 .hasMessage("A clinic room with this room number already exists.");
     }
 
@@ -189,7 +190,7 @@ class ClinicRoomServiceImplTest {
         when(clinicRoomRepository.existsByRoomNumberAndIdNot("101", 5L)).thenReturn(true);
 
         assertThatThrownBy(() -> clinicRoomService.updateRoom(5L, request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(DuplicateRoomNumberException.class)
                 .hasMessage("A clinic room with this room number already exists.");
     }
 
@@ -210,6 +211,39 @@ class ClinicRoomServiceImplTest {
         assertThat(existing.getRoomName()).isEqualTo("Consultation Room");
         assertThat(existing.getRoomNumber()).isEqualTo("101");
         assertThat(existing.getRoomStatus()).isEqualTo(ClinicRoomStatus.AVAILABLE);
+    }
+
+    @Test
+    void updateRoomStatusUpdatesExistingEntity() {
+        ClinicRoom existing = room(5L, "100");
+        ClinicRoomResponseDTO response = response(5L, "100");
+        response.setRoomStatus(ClinicRoomStatus.OUT_OF_SERVICE);
+
+        when(clinicRoomRepository.findById(5L)).thenReturn(Optional.of(existing));
+        when(clinicRoomRepository.save(existing)).thenReturn(existing);
+        when(clinicRoomMapper.toResponseDTO(existing)).thenReturn(response);
+
+        ClinicRoomResponseDTO result =
+                clinicRoomService.updateRoomStatus(5L, ClinicRoomStatus.OUT_OF_SERVICE);
+
+        assertThat(result).isSameAs(response);
+        assertThat(existing.getRoomStatus()).isEqualTo(ClinicRoomStatus.OUT_OF_SERVICE);
+    }
+
+    @Test
+    void updateRoomStatusThrowsWhenStatusIsMissing() {
+        assertThatThrownBy(() -> clinicRoomService.updateRoomStatus(5L, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Room status is required.");
+    }
+
+    @Test
+    void updateRoomStatusThrowsWhenRoomDoesNotExist() {
+        when(clinicRoomRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clinicRoomService.updateRoomStatus(5L, ClinicRoomStatus.AVAILABLE))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Clinic room not found with id: 5");
     }
 
     @Test
