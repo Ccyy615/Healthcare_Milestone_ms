@@ -1,0 +1,52 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_TOP_DOWN()
+
+title Container Diagram for Healthcare Appointment Scheduling System
+
+Person(patient, "Patient", "Books, views, reschedules, or cancels appointments.")
+Person(receptionist, "Receptionist", "Schedules and manages appointments for patients.")
+Person(doctor, "Doctor", "Views assigned appointments and daily schedule information.")
+
+System_Ext(notification_service, "Notification Service", "Sends confirmations, reminders, and cancellation messages.")
+
+System_Boundary(healthcare_system, "Healthcare Appointment Scheduling System") {
+    Container(web_application, "Web Application", "JavaScript, React", "Delivers the single-page application shell to the browser.")
+    Container(single_page_app, "Single-page Application", "JavaScript, React", "Provides the appointment scheduling user interface in the browser.")
+    Container(api_gateway, "API Gateway", "Java, Spring Boot", "Exposes the public REST API and is the intended HATEOAS boundary.")
+    Container(appointment_service, "appointment-scheduling-service", "Java, Spring Boot", "Coordinates booking, confirmation, rescheduling, and cancellation workflows.")
+    Container(clinic_room_service, "clinic-availability-service", "Java, Spring Boot", "Manages clinic room metadata, status, and availability.")
+    Container(patient_service, "patient-records-service", "Java, Spring Boot", "Manages patient records and patient-specific validation rules.")
+    Container(doctor_service, "doctor-directory-service", "Java, Spring Boot", "Manages doctor profiles, specialties, work zones, and license eligibility.")
+    ContainerDb(appointment_db, "Appointments DB", "MySQL", "Stores appointment schedules and scheduling history.")
+    ContainerDb(patient_db, "Patients DB", "MySQL", "Stores patient records.")
+    ContainerDb(doctor_db, "Doctors DB", "PostgreSQL", "Stores doctor profiles, specialties, and license data.")
+    ContainerDb(clinic_room_db, "Clinic Rooms DB", "PostgreSQL", "Stores clinic room metadata and availability state.")
+}
+
+Rel(patient, web_application, "Uses", "HTTPS")
+Rel(receptionist, web_application, "Uses", "HTTPS")
+Rel(doctor, web_application, "Uses", "HTTPS")
+
+Rel(web_application, single_page_app, "Delivers to the browser")
+Rel(single_page_app, api_gateway, "Makes API calls to", "JSON/REST/HTTPS")
+
+Rel(api_gateway, appointment_service, "Routes appointment workflow calls to", "JSON/REST/HTTPS")
+Rel(api_gateway, clinic_room_service, "Routes clinic room calls to", "JSON/REST/HTTPS")
+Rel(api_gateway, patient_service, "Routes patient record calls to", "JSON/REST/HTTPS")
+Rel(api_gateway, doctor_service, "Routes doctor directory calls to", "JSON/REST/HTTPS")
+
+Rel(appointment_service, appointment_db, "Reads from and writes to", "JDBC/SQL")
+Rel(appointment_service, clinic_room_service, "Checks and reserves room availability with", "JSON/REST/HTTPS")
+Rel(appointment_service, patient_service, "Retrieves patient information from", "JSON/REST/HTTPS")
+Rel(appointment_service, doctor_service, "Retrieves doctor information from", "JSON/REST/HTTPS")
+Rel(appointment_service, notification_service, "Sends notification requests to", "JSON/REST/HTTPS")
+
+Rel(clinic_room_service, clinic_room_db, "Reads from and writes to", "JDBC/SQL")
+Rel(patient_service, patient_db, "Reads from and writes to", "JDBC/SQL")
+Rel(doctor_service, doctor_db, "Reads from and writes to", "JDBC/SQL")
+
+SHOW_LEGEND()
+
+@enduml

@@ -1,0 +1,208 @@
+@startuml
+
+title Updated DDD Domain Model for Healthcare Appointment Scheduling System
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Patient Records Bounded Context" {
+  class Patient <<Aggregate Root>> {
+    +patientId: PatientIdentifier
+    +fullName: String
+    +dateOfBirth: LocalDate
+    +gender: String
+    +insuranceNumber: String
+    +status: PatientStatus
+    +activate()
+    +deactivate()
+    +updateContactInfo()
+  }
+
+  class PatientIdentifier <<Value Object>> {
+    +patientId: String
+  }
+
+  class ContactInfo <<Value Object>> {
+    +email: String
+    +phone: String
+  }
+
+  class Address <<Value Object>> {
+    +street: String
+    +city: String
+    +province: String
+    +postalCode: String
+    +country: String
+  }
+
+  class Allergy <<Value Object>> {
+    +substance: String
+    +reaction: String
+  }
+
+  enum BloodType {
+    A
+    B
+    AB
+    O
+  }
+
+  enum PatientStatus {
+    ACTIVE
+    INACTIVE
+  }
+
+  Patient *-- PatientIdentifier
+  Patient *-- ContactInfo
+  Patient *-- Address
+  Patient *-- Allergy
+  Patient --> BloodType
+  Patient --> PatientStatus
+}
+
+package "Doctor Directory Bounded Context" {
+  class Doctor <<Aggregate Root>> {
+    +doctorId: DoctorIdentifier
+    +doctorFirstName: String
+    +doctorLastName: String
+    +isActive: Boolean
+    +isValid: Boolean
+    +activate()
+    +deactivate()
+    +verify()
+    +unverify()
+    +addSpeciality()
+    +removeSpeciality()
+    +addLicense()
+  }
+
+  class DoctorIdentifier <<Value Object>> {
+    +doctorId: String
+  }
+
+  class WorkZone <<Value Object>> {
+    +city: String
+    +province: String
+  }
+
+  class Speciality <<Value Object>> {
+    +speciality: String
+    +proficiencyLevel: ProficiencyLevel
+  }
+
+  class License <<Entity>> {
+    +licenseName: String
+    +status: LicenseStatus
+    +performedDate: LocalDateTime
+    +expiryDate: LocalDateTime
+    +updateStatus()
+    +isValid()
+  }
+
+  enum ProficiencyLevel {
+    BEGINNER
+    INTERMEDIATE
+    ADVANCED
+    EXPERT
+  }
+
+  enum LicenseStatus {
+    VALID
+    SUSPENDED
+    EXPIRED
+  }
+
+  Doctor *-- DoctorIdentifier
+  Doctor *-- WorkZone
+  Doctor *-- "0..*" Speciality
+  Doctor *-- "0..1" License
+  Speciality --> ProficiencyLevel
+  License --> LicenseStatus
+}
+
+package "Clinic Availability Bounded Context" {
+  class ClinicRoom <<Aggregate Root>> {
+    +roomId: ClinicRoomIdentifier
+    +roomName: String
+    +roomNumber: String
+    +roomStatus: ClinicRoomStatus
+    +isAvailableForBooking()
+  }
+
+  class ClinicRoomIdentifier <<Value Object>> {
+    +roomId: String
+  }
+
+  enum ClinicRoomStatus {
+    AVAILABLE
+    OUT_OF_SERVICE
+  }
+
+  ClinicRoom *-- ClinicRoomIdentifier
+  ClinicRoom --> ClinicRoomStatus
+}
+
+package "Appointment Scheduling Bounded Context" {
+  class Appointment <<Aggregate Root>> {
+    +appointmentId: Long
+    +patientId: PatientIdentifier
+    +doctorId: DoctorIdentifier
+    +roomId: ClinicRoomIdentifier
+    +status: AppointmentStatus
+    +createdAt: LocalDateTime
+    +description: String
+    +validateTimeSlot()
+    +overlapsWith(other)
+  }
+
+  class TimeSlot <<Value Object>> {
+    +startTime: LocalDateTime
+    +endTime: LocalDateTime
+  }
+
+  class MedicalNote <<Entity>> {
+    +noteId: Long
+    +doctorId: DoctorIdentifier
+    +patientId: PatientIdentifier
+    +noteText: String
+    +createdAt: LocalDateTime
+    +lastUpdatedAt: LocalDateTime
+    +noteType: NoteType
+  }
+
+  enum AppointmentStatus {
+    REQUESTED
+    CONFIRMED
+    IN_PROGRESS
+    COMPLETED
+    CANCELLED
+  }
+
+  enum NoteType {
+    CONSULTATION
+    FOLLOW_UP
+    PRESCRIPTION
+  }
+
+  Appointment *-- TimeSlot
+  Appointment --> AppointmentStatus
+  Appointment "1" <-- "0..*" MedicalNote : documents
+  MedicalNote --> NoteType
+}
+
+Appointment ..> PatientIdentifier : references by id
+Appointment ..> DoctorIdentifier : references by id
+Appointment ..> ClinicRoomIdentifier : references by id
+MedicalNote ..> PatientIdentifier : references by id
+MedicalNote ..> DoctorIdentifier : references by id
+
+note bottom of Appointment
+Milestone 1 implements the three independent supporting bounded contexts:
+Patient Records, Doctor Directory, and Clinic Availability.
+Appointment orchestration remains the next aggregate-focused step and crosses
+context boundaries only through foreign identifiers.
+end note
+
+@enduml

@@ -1,0 +1,231 @@
+Milestone 1 Peer Demo Commands
+Project root:
+C:\Users\Vikit\IdeaProjects\Healthcare_Milestone_ms
+
+Use this file top to bottom during peer grading.
+
+==================================================
+1. Start Docker Compose And Verify 9 Containers
+==================================================
+
+Run from the project root:
+
+docker compose up -d
+
+docker compose ps
+
+Optional:
+docker ps
+
+Expected running containers:
+- patient-service
+- doctor-service
+- clinic-room-service
+- patient-db
+- doctor-db
+- clinic-room-db
+- patient-db-admin
+- doctor-db-admin
+- clinic-room-db-admin
+
+Admin GUI URLs:
+- Patient DB Adminer: http://localhost:8084
+- Doctor DB Adminer: http://localhost:8085
+- Clinic Room DB Adminer: http://localhost:8086
+
+Adminer login info:
+- Patient DB:
+  System: MySQL
+  Server: patient-db
+  Username: patient_user
+  Password: patient_pwd
+  Database: patient_service
+
+- Doctor DB:
+  System: PostgreSQL
+  Server: doctor-db
+  Username: doctor_user
+  Password: doctor_pwd
+  Database: doctor_service
+
+- Clinic Room DB:
+  System: PostgreSQL
+  Server: clinic-room-db
+  Username: clinic_room_user
+  Password: clinic_room_pwd
+  Database: clinic_room_service
+
+==================================================
+2. Run The Multi-Project Build
+==================================================
+
+Windows PowerShell:
+.\gradlew.bat clean build
+
+Git Bash:
+./gradlew clean build
+
+==================================================
+3. Patient Service - 5 HTTP Methods
+==================================================
+
+Open a shell inside the patient container:
+docker compose exec patient-service sh
+
+Create a timestamp variable:
+TS=$(date +%s)
+
+POST
+PATIENT_ID=$(curl -s -X POST http://localhost:8080/api/v1/patients \
+  -H 'Content-Type: application/json' \
+  -d "{\"fullName\":\"Milestone Patient $TS\",\"dateOfBirth\":\"2001-04-15\",\"gender\":\"Female\",\"contactInfo\":{\"email\":\"patient$TS@example.com\",\"phone\":\"514555$TS\"},\"address\":{\"street\":\"100 Demo Street\",\"city\":\"Montreal\",\"province\":\"QC\",\"postal_code\":\"H1H1H1\",\"country\":\"Canada\"},\"insuranceNumber\":\"INS-$TS\",\"allergy\":{\"substance\":\"Peanuts\",\"reaction\":\"Rash\"},\"bloodType\":\"A\",\"status\":\"ACTIVE\"}" \
+  | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+echo $PATIENT_ID
+
+GET
+curl -s http://localhost:8080/api/v1/patients/$PATIENT_ID
+
+PUT
+curl -s -X PUT http://localhost:8080/api/v1/patients/$PATIENT_ID \
+  -H 'Content-Type: application/json' \
+  -d "{\"fullName\":\"Updated Patient $TS\",\"dateOfBirth\":\"2001-04-15\",\"gender\":\"Female\",\"contactInfo\":{\"email\":\"updated.patient$TS@example.com\",\"phone\":\"514777$TS\"},\"address\":{\"street\":\"200 Updated Street\",\"city\":\"Montreal\",\"province\":\"QC\",\"postal_code\":\"H2H2H2\",\"country\":\"Canada\"},\"insuranceNumber\":\"INS-UPD-$TS\",\"allergy\":{\"substance\":\"Dust\",\"reaction\":\"Sneezing\"},\"bloodType\":\"B\",\"status\":\"ACTIVE\"}"
+
+PATCH
+curl -s -X PATCH http://localhost:8080/api/v1/patients/$PATIENT_ID/status \
+  -H 'Content-Type: application/json' \
+  -d '{"status":"INACTIVE"}'
+
+DELETE
+curl -s -X DELETE http://localhost:8080/api/v1/patients/$PATIENT_ID
+
+Exit container shell if needed:
+exit
+
+==================================================
+4. Doctor Service - 5 HTTP Methods
+==================================================
+
+Open a shell inside the doctor container:
+docker compose exec doctor-service sh
+
+Create a timestamp variable:
+TS=$(date +%s)
+
+POST
+DOCTOR_ID=$(curl -s -X POST http://localhost:8080/api/v1/doctors \
+  -H 'Content-Type: application/json' \
+  -d "{\"doctorFirstName\":\"Demo$TS\",\"doctorLastName\":\"Doctor\",\"workZone\":{\"city\":\"Montreal\",\"province\":\"QC\"},\"speciality\":[{\"speciality\":\"Cardiology\",\"proficiencyLevel\":\"INTERMEDIATE\"}]}" \
+  | sed -n 's/.*"doctorId":"\([^"]*\)".*/\1/p')
+echo $DOCTOR_ID
+
+GET
+curl -s http://localhost:8080/api/v1/doctors/$DOCTOR_ID
+
+PUT
+curl -s -X PUT http://localhost:8080/api/v1/doctors/$DOCTOR_ID \
+  -H 'Content-Type: application/json' \
+  -d "{\"doctorFirstName\":\"Updated$TS\",\"doctorLastName\":\"Doctor\",\"workZone\":{\"city\":\"Quebec City\",\"province\":\"QC\"},\"speciality\":[{\"speciality\":\"Cardiology\",\"proficiencyLevel\":\"EXPERT\"}]}"
+
+PATCH
+curl -s -X PATCH http://localhost:8080/api/v1/doctors/$DOCTOR_ID/activation \
+  -H 'Content-Type: application/json' \
+  -d '{"active":false}'
+
+DELETE
+curl -s -X DELETE http://localhost:8080/api/v1/doctors/$DOCTOR_ID
+
+Exit container shell if needed:
+exit
+
+==================================================
+5. Clinic Room Service - 5 HTTP Methods
+==================================================
+
+Open a shell inside the clinic-room container:
+docker compose exec clinic-room-service sh
+
+Create a timestamp variable:
+TS=$(date +%s)
+
+POST
+ROOM_ID=$(curl -s -X POST http://localhost:8080/api/v1/clinic-rooms \
+  -H 'Content-Type: application/json' \
+  -d "{\"roomName\":\"Demo Room $TS\",\"roomNumber\":\"R-$TS\",\"roomStatus\":\"AVAILABLE\"}" \
+  | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+echo $ROOM_ID
+
+GET
+curl -s http://localhost:8080/api/v1/clinic-rooms/$ROOM_ID
+
+PUT
+curl -s -X PUT http://localhost:8080/api/v1/clinic-rooms/$ROOM_ID \
+  -H 'Content-Type: application/json' \
+  -d "{\"roomName\":\"Updated Demo Room $TS\",\"roomNumber\":\"R-UPD-$TS\",\"roomStatus\":\"AVAILABLE\"}"
+
+PATCH
+curl -s -X PATCH http://localhost:8080/api/v1/clinic-rooms/$ROOM_ID/status \
+  -H 'Content-Type: application/json' \
+  -d '{"roomStatus":"OUT_OF_SERVICE"}'
+
+DELETE
+curl -s -X DELETE http://localhost:8080/api/v1/clinic-rooms/$ROOM_ID
+
+Exit container shell if needed:
+exit
+
+==================================================
+6. Optional Backup Negative Tests
+==================================================
+
+These are not usually needed for the live demo, but keep them ready in case the peer asks.
+
+Patient duplicate email:
+docker compose exec patient-service sh
+TS=$(date +%s)
+curl -s -X POST http://localhost:8080/api/v1/patients \
+  -H 'Content-Type: application/json' \
+  -d "{\"fullName\":\"Patient One\",\"dateOfBirth\":\"2001-04-15\",\"gender\":\"Female\",\"contactInfo\":{\"email\":\"dup$TS@example.com\",\"phone\":\"514111$TS\"},\"address\":{\"street\":\"1 Demo Street\",\"city\":\"Montreal\",\"province\":\"QC\",\"postal_code\":\"H1H1H1\",\"country\":\"Canada\"},\"insuranceNumber\":\"INS-A-$TS\",\"allergy\":{\"substance\":\"Dust\",\"reaction\":\"Sneezing\"},\"bloodType\":\"A\",\"status\":\"ACTIVE\"}"
+curl -s -X POST http://localhost:8080/api/v1/patients \
+  -H 'Content-Type: application/json' \
+  -d "{\"fullName\":\"Patient Two\",\"dateOfBirth\":\"2002-04-15\",\"gender\":\"Female\",\"contactInfo\":{\"email\":\"dup$TS@example.com\",\"phone\":\"514222$TS\"},\"address\":{\"street\":\"2 Demo Street\",\"city\":\"Montreal\",\"province\":\"QC\",\"postal_code\":\"H2H2H2\",\"country\":\"Canada\"},\"insuranceNumber\":\"INS-B-$TS\",\"allergy\":{\"substance\":\"Pollen\",\"reaction\":\"Itchy eyes\"},\"bloodType\":\"B\",\"status\":\"ACTIVE\"}"
+exit
+
+Doctor not eligible:
+docker compose exec doctor-service sh
+TS=$(date +%s)
+BAD_DOCTOR_ID=$(curl -s -X POST http://localhost:8080/api/v1/doctors \
+  -H 'Content-Type: application/json' \
+  -d "{\"doctorFirstName\":\"Bad$TS\",\"doctorLastName\":\"Doctor\",\"workZone\":{\"city\":\"Montreal\",\"province\":\"QC\"},\"speciality\":[{\"speciality\":\"Cardiology\",\"proficiencyLevel\":\"BEGINNER\"}]}" \
+  | sed -n 's/.*"doctorId":"\([^"]*\)".*/\1/p')
+curl -s -X PATCH http://localhost:8080/api/v1/doctors/$BAD_DOCTOR_ID/activation \
+  -H 'Content-Type: application/json' \
+  -d '{"active":true}'
+exit
+
+Duplicate room number:
+docker compose exec clinic-room-service sh
+TS=$(date +%s)
+curl -s -X POST http://localhost:8080/api/v1/clinic-rooms \
+  -H 'Content-Type: application/json' \
+  -d "{\"roomName\":\"Room A\",\"roomNumber\":\"DUP-$TS\",\"roomStatus\":\"AVAILABLE\"}"
+curl -s -X POST http://localhost:8080/api/v1/clinic-rooms \
+  -H 'Content-Type: application/json' \
+  -d "{\"roomName\":\"Room B\",\"roomNumber\":\"DUP-$TS\",\"roomStatus\":\"AVAILABLE\"}"
+exit
+
+==================================================
+7. Quick Notes For The Demo
+==================================================
+
+- The three low-level services are:
+  patient-service, doctor-service, clinic-room-service
+- Database split:
+  patient-service uses MySQL
+  doctor-service uses PostgreSQL
+  clinic-room-service uses PostgreSQL
+- All three low-level services support:
+  GET, POST, PUT, PATCH, DELETE
+- Low-level HATEOAS was removed.
+- HATEOAS belongs at the API Gateway layer, not these low-level services.
+- All three low-level services have repository integration tests, controller integration tests, and domain-specific exception tests.
+- JaCoCo coverage is 100 percent for all three low-level services.

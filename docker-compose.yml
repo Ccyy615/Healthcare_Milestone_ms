@@ -45,6 +45,36 @@ services:
       retries: 10
       start_period: 20s
 
+  patient-db-admin:
+    image: adminer:latest
+    ports:
+      - "8084:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: patient-db
+    depends_on:
+      patient-db:
+        condition: service_healthy
+
+  doctor-db-admin:
+    image: adminer:latest
+    ports:
+      - "8085:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: doctor-db
+    depends_on:
+      doctor-db:
+        condition: service_healthy
+
+  clinic-room-db-admin:
+    image: adminer:latest
+    ports:
+      - "8086:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: clinic-room-db
+    depends_on:
+      clinic-room-db:
+        condition: service_healthy
+
   patient-service:
     build: ./patient-service
     ports:
