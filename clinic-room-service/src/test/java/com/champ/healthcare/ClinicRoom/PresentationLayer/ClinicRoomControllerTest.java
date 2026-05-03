@@ -51,6 +51,17 @@ class ClinicRoomControllerTest {
     }
 
     @Test
+    void getRoomByRoomIdReturnsOkResponse() {
+        ClinicRoomResponseDTO room = roomResponse();
+        when(clinicRoomService.getRoomByRoomId("room-1")).thenReturn(room);
+
+        ResponseEntity<ClinicRoomResponseDTO> response = clinicRoomController.getRoomByRoomId("room-1");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(room);
+    }
+
+    @Test
     void createRoomReturnsCreatedResponse() {
         ClinicRoomRequestDTO request = roomRequest();
         ClinicRoomResponseDTO room = roomResponse();

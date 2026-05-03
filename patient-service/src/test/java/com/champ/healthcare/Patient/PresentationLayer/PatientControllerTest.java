@@ -57,6 +57,18 @@ class PatientControllerTest {
     }
 
     @Test
+    void getPatientByPatientIdentifierReturnsOkResponse() {
+        PatientResponseDTO patient = patientResponse();
+        when(patientService.getPatientByPatientIdentifier("patient-1")).thenReturn(patient);
+
+        ResponseEntity<PatientResponseDTO> response =
+                patientController.getPatientByPatientIdentifier("patient-1");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(patient);
+    }
+
+    @Test
     void createPatientReturnsCreatedResponse() {
         PatientRequestDTO request = patientRequest();
         PatientResponseDTO created = patientResponse();

@@ -9,6 +9,7 @@ import java.util.List;
 public interface PatientService {
     List<PatientResponseDTO> getAllPatients();
     PatientResponseDTO getPatientById(Long id);
+    PatientResponseDTO getPatientByPatientIdentifier(String patientId);
     PatientResponseDTO createPatient(PatientRequestDTO patientRequestDTO);
     PatientResponseDTO updatePatient(Long id, PatientRequestDTO patientRequestDTO);
     PatientResponseDTO updatePatientStatus(Long id, PatientStatus status);

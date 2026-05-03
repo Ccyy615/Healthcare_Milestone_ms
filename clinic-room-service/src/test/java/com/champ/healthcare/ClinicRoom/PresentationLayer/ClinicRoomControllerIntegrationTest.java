@@ -45,6 +45,16 @@ class ClinicRoomControllerIntegrationTest {
     }
 
     @Test
+    void getRoomByRoomIdReturnsRoom() {
+        webTestClient.get()
+                .uri("/api/v1/clinic-rooms/room-identifier/{roomId}", "r1a2b3c4-d5e6-47f8-9a10-111111111111")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.roomNumber").isEqualTo("101");
+    }
+
+    @Test
     void createRoomReturnsCreatedRoom() {
         webTestClient.post()
                 .uri("/api/v1/clinic-rooms")

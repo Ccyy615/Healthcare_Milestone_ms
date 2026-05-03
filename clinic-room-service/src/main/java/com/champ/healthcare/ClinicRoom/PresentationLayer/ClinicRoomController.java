@@ -29,6 +29,11 @@ public class ClinicRoomController {
         return ResponseEntity.ok(clinicRoomService.getRoomById(id));
     }
 
+    @GetMapping("/room-identifier/{roomId}")
+    public ResponseEntity<ClinicRoomResponseDTO> getRoomByRoomId(@PathVariable String roomId) {
+        return ResponseEntity.ok(clinicRoomService.getRoomByRoomId(roomId));
+    }
+
     @PostMapping
     public ResponseEntity<ClinicRoomResponseDTO> createRoom(
             @Valid @RequestBody ClinicRoomRequestDTO requestDTO

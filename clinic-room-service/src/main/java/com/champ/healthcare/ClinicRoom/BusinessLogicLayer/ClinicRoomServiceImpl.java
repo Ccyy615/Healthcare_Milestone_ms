@@ -39,6 +39,15 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ClinicRoomResponseDTO getRoomByRoomId(String roomId) {
+        ClinicRoom room = clinicRoomRepository.findByRoomId_RoomId(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Clinic room not found with roomId: " + roomId));
+
+        return clinicRoomMapper.toResponseDTO(room);
+    }
+
+    @Override
     @Transactional
     public ClinicRoomResponseDTO createRoom(ClinicRoomRequestDTO requestDTO) {
         validateRequest(requestDTO);

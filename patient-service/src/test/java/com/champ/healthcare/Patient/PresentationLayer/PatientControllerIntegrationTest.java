@@ -45,6 +45,16 @@ class PatientControllerIntegrationTest {
     }
 
     @Test
+    void getPatientByPatientIdentifierReturnsPatient() {
+        webTestClient.get()
+                .uri("/api/v1/patients/patient-identifier/{patientId}", "c1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c6")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.fullName").isEqualTo("John Smith");
+    }
+
+    @Test
     void createPatientReturnsCreatedPatient() {
         webTestClient.post()
                 .uri("/api/v1/patients")

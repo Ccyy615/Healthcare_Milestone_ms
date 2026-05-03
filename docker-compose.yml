@@ -45,10 +45,26 @@ services:
       retries: 10
       start_period: 20s
 
+  appointment-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: appointment_root_pwd
+      MYSQL_DATABASE: appointment_service
+      MYSQL_USER: appointment_user
+      MYSQL_PASSWORD: appointment_pwd
+    volumes:
+      - appointment_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pappointment_root_pwd"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   patient-db-admin:
     image: adminer:latest
-    ports:
-      - "8084:8080"
+    expose:
+      - "8080"
     environment:
       ADMINER_DEFAULT_SERVER: patient-db
     depends_on:
@@ -57,8 +73,8 @@ services:
 
   doctor-db-admin:
     image: adminer:latest
-    ports:
-      - "8085:8080"
+    expose:
+      - "8080"
     environment:
       ADMINER_DEFAULT_SERVER: doctor-db
     depends_on:
@@ -67,18 +83,26 @@ services:
 
   clinic-room-db-admin:
     image: adminer:latest
-    ports:
-      - "8086:8080"
+    expose:
+      - "8080"
     environment:
       ADMINER_DEFAULT_SERVER: clinic-room-db
     depends_on:
       clinic-room-db:
         condition: service_healthy
 
+  appointment-db-admin:
+    image: adminer:latest
+    expose:
+      - "8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: appointment-db
+    depends_on:
+      appointment-db:
+        condition: service_healthy
+
   patient-service:
     build: ./patient-service
-    ports:
-      - "8081:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
@@ -87,8 +111,6 @@ services:
 
   doctor-service:
     build: ./doctor-service
-    ports:
-      - "8082:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
@@ -97,15 +119,53 @@ services:
 
   clinic-room-service:
     build: ./clinic-room-service
-    ports:
-      - "8083:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
       clinic-room-db:
         condition: service_healthy
 
+  appointment-service:
+    build: ./appointment-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      APPOINTMENT_DATASOURCE_URL: jdbc:mysql://appointment-db:3306/appointment_service?createDatabaseIfNotExist=true
+      APPOINTMENT_DATASOURCE_USERNAME: appointment_user
+      APPOINTMENT_DATASOURCE_PASSWORD: appointment_pwd
+      PATIENT_SERVICE_URL: http://patient-service:8080
+      DOCTOR_SERVICE_URL: http://doctor-service:8080
+      CLINIC_ROOM_SERVICE_URL: http://clinic-room-service:8080
+    depends_on:
+      appointment-db:
+        condition: service_healthy
+      patient-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
+      clinic-room-service:
+        condition: service_started
+
+  apigateway-service:
+    build: ./apigateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      PATIENT_SERVICE_URL: http://patient-service:8080
+      DOCTOR_SERVICE_URL: http://doctor-service:8080
+      CLINIC_ROOM_SERVICE_URL: http://clinic-room-service:8080
+      APPOINTMENT_SERVICE_URL: http://appointment-service:8080
+    depends_on:
+      patient-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
+      clinic-room-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+
 volumes:
   patient_mysql_data:
   doctor_postgres_data:
   clinic_room_postgres_data:
+  appointment_mysql_data:

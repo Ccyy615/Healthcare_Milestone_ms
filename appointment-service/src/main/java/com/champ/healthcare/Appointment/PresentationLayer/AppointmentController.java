@@ -2,16 +2,11 @@ package com.champ.healthcare.Appointment.PresentationLayer;
 
 import com.champ.healthcare.Appointment.BusinessLogicLayer.AppointmentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
-
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/api/v1/appointments")
@@ -19,71 +14,69 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
-    private final AppointmentModelAssembler appointmentModelAssembler;
 
     @GetMapping
-    public ResponseEntity<CollectionModel<EntityModel<AppointmentResponseDTO>>> getAllAppointments() {
+    public ResponseEntity<List<AppointmentResponseDTO>> getAllAppointments() {
         List<AppointmentResponseDTO> appointments = appointmentService.getAllAppointments();
-        return ResponseEntity.ok(appointmentModelAssembler.toCollectionModel(appointments));
+        return ResponseEntity.ok(appointments);
     }
 
     @GetMapping("/{appointment_id}")
-    public ResponseEntity<EntityModel<AppointmentResponseDTO>> getAppointmentById(
+    public ResponseEntity<AppointmentResponseDTO> getAppointmentById(
             @PathVariable("appointment_id") Long appointmentId
     ) {
         AppointmentResponseDTO appointment = appointmentService.getAppointmentById(appointmentId);
-        return ResponseEntity.ok(appointmentModelAssembler.toModel(appointment));
+        return ResponseEntity.ok(appointment);
     }
 
     @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<CollectionModel<EntityModel<AppointmentResponseDTO>>> getAppointmentsByDoctorId(
+    public ResponseEntity<List<AppointmentResponseDTO>> getAppointmentsByDoctorId(
             @PathVariable String doctorId
     ) {
         List<AppointmentResponseDTO> appointments = appointmentService.getAppointmentsByDoctorId(doctorId);
-        return ResponseEntity.ok(appointmentModelAssembler.toCollectionModel(appointments));
+        return ResponseEntity.ok(appointments);
     }
 
     @PostMapping
-    public ResponseEntity<EntityModel<AppointmentResponseDTO>> createAppointment(
+    public ResponseEntity<AppointmentResponseDTO> createAppointment(
             @RequestBody AppointmentRequestDTO dto
     ) {
         AppointmentResponseDTO createdAppointment = appointmentService.createAppointment(dto);
-        EntityModel<AppointmentResponseDTO> model = appointmentModelAssembler.toModel(createdAppointment);
-        URI location = linkTo(methodOn(AppointmentController.class).getAppointmentById(createdAppointment.getAppointmentId())).toUri();
+        URI location = URI.create("/api/v1/appointments/" + createdAppointment.getAppointmentId());
 
-        return ResponseEntity.created(location).body(model);
+        return ResponseEntity.created(location).body(createdAppointment);
     }
 
     @PutMapping("/{appointment_id}")
-    public ResponseEntity<EntityModel<AppointmentResponseDTO>> updateAppointment(
+    public ResponseEntity<AppointmentResponseDTO> updateAppointment(
             @PathVariable("appointment_id") Long appointmentId,
             @RequestBody AppointmentRequestDTO dto
     ) {
         AppointmentResponseDTO updatedAppointment = appointmentService.updateAppointment(appointmentId, dto);
-        return ResponseEntity.ok(appointmentModelAssembler.toModel(updatedAppointment));
+        return ResponseEntity.ok(updatedAppointment);
     }
 
     @DeleteMapping("/{appointment_id}")
-    public ResponseEntity<EntityModel<AppointmentResponseDTO>> deleteAppointment(
+    public ResponseEntity<AppointmentResponseDTO> deleteAppointment(
             @PathVariable("appointment_id") Long appointmentId
     ) {
         AppointmentResponseDTO deletedAppointment = appointmentService.deleteAppointment(appointmentId);
-        return ResponseEntity.ok(appointmentModelAssembler.toModel(deletedAppointment));
+        return ResponseEntity.ok(deletedAppointment);
     }
 
     @PatchMapping("/{appointment_id}/complete")
-    public ResponseEntity<EntityModel<AppointmentResponseDTO>> completeAppointment(
+    public ResponseEntity<AppointmentResponseDTO> completeAppointment(
             @PathVariable("appointment_id") Long appointmentId
     ) {
         AppointmentResponseDTO appointment = appointmentService.completeAppointment(appointmentId);
-        return ResponseEntity.ok(appointmentModelAssembler.toModel(appointment));
+        return ResponseEntity.ok(appointment);
     }
 
     @PatchMapping("/{appointment_id}/cancel")
-    public ResponseEntity<EntityModel<AppointmentResponseDTO>> cancelAppointment(
+    public ResponseEntity<AppointmentResponseDTO> cancelAppointment(
             @PathVariable("appointment_id") Long appointmentId
     ) {
         AppointmentResponseDTO appointment = appointmentService.cancelAppointment(appointmentId);
-        return ResponseEntity.ok(appointmentModelAssembler.toModel(appointment));
+        return ResponseEntity.ok(appointment);
     }
 }

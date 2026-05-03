@@ -43,6 +43,15 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PatientResponseDTO getPatientByPatientIdentifier(String patientId) {
+        Patient patient = patientRepository.findByPatientId_PatientId(patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with patientId: " + patientId));
+
+        return patientMapper.toResponseDTO(patient);
+    }
+
+    @Override
     @Transactional
     public PatientResponseDTO createPatient(PatientRequestDTO patientRequestDTO) {
         log.info("Creating patient for email: {}", patientRequestDTO.getContactInfo() != null

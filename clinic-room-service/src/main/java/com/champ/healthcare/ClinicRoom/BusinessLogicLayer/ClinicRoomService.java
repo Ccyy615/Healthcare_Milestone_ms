@@ -12,6 +12,8 @@ public interface ClinicRoomService {
 
     ClinicRoomResponseDTO getRoomById(Long id);
 
+    ClinicRoomResponseDTO getRoomByRoomId(String roomId);
+
     ClinicRoomResponseDTO createRoom(ClinicRoomRequestDTO requestDTO);
 
     ClinicRoomResponseDTO updateRoom(Long id, ClinicRoomRequestDTO requestDTO);

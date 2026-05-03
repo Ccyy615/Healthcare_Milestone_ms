@@ -4,9 +4,18 @@ import com.champ.healthcare.Appointment.DataAccessLayer.AppointmentRepository;
 import com.champ.healthcare.Appointment.Domain.Appointment;
 import com.champ.healthcare.Appointment.Domain.AppointmentStatus;
 import com.champ.healthcare.Appointment.Domain.TimeSlot;
+import com.champ.healthcare.Appointment.DomainClientLayer.ClinicRoomClientResponse;
+import com.champ.healthcare.Appointment.DomainClientLayer.ClinicRoomServiceClient;
+import com.champ.healthcare.Appointment.DomainClientLayer.DoctorClientResponse;
+import com.champ.healthcare.Appointment.DomainClientLayer.DoctorServiceClient;
+import com.champ.healthcare.Appointment.DomainClientLayer.PatientClientResponse;
+import com.champ.healthcare.Appointment.DomainClientLayer.PatientServiceClient;
 import com.champ.healthcare.Appointment.Mapper.AppointmentMapper;
 import com.champ.healthcare.Appointment.PresentationLayer.AppointmentRequestDTO;
 import com.champ.healthcare.Appointment.PresentationLayer.AppointmentResponseDTO;
+import com.champ.healthcare.Appointment.utilities.AppointmentConflictException;
+import com.champ.healthcare.Appointment.utilities.DoctorNotEligibleException;
+import com.champ.healthcare.Appointment.utilities.InvalidInputException;
 import com.champ.healthcare.Appointment.utilities.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +30,16 @@ import java.util.List;
 public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
+    private final PatientServiceClient patientServiceClient;
+    private final DoctorServiceClient doctorServiceClient;
+    private final ClinicRoomServiceClient clinicRoomServiceClient;
 
     @Override
     @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getAllAppointments() {
         return appointmentRepository.findAll()
                 .stream()
-                .map(AppointmentMapper::toResponseDTO)
+                .map(this::buildResponse)
                 .toList();
     }
 
@@ -39,7 +51,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Appointment not found with ID: " + appointmentId
                 ));
 
-        return AppointmentMapper.toResponseDTO(appointment);
+        return buildResponse(appointment);
     }
 
     @Override
@@ -47,7 +59,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public List<AppointmentResponseDTO> getAppointmentsByDoctorId(String doctorId) {
         return appointmentRepository.findByDoctorId(doctorId)
                 .stream()
-                .map(AppointmentMapper::toResponseDTO)
+                .map(this::buildResponse)
                 .toList();
     }
 
@@ -55,13 +67,18 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Transactional
     public AppointmentResponseDTO createAppointment(AppointmentRequestDTO dto) {
         validateRequest(dto);
+        PatientClientResponse patient = getRequiredPatient(dto.getPatientId());
+        DoctorClientResponse doctor = getRequiredDoctor(dto.getDoctorId());
+        ClinicRoomClientResponse room = getRequiredRoom(dto.getRoomId());
+
+        validateAggregateInvariant(patient, doctor, room);
         throwIfRoomDoubleBooked(dto.getRoomId(), dto.getStartTime(), dto.getEndTime(), null);
 
         Appointment appointment = AppointmentMapper.toEntity(dto);
         appointment.validateTimeSlot();
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
-        return AppointmentMapper.toResponseDTO(savedAppointment);
+        return buildResponse(savedAppointment, patient, doctor, room);
     }
 
     @Override
@@ -74,6 +91,11 @@ public class AppointmentServiceImpl implements AppointmentService {
                         "Appointment not found with ID: " + appointmentId
                 ));
 
+        PatientClientResponse patient = getRequiredPatient(dto.getPatientId());
+        DoctorClientResponse doctor = getRequiredDoctor(dto.getDoctorId());
+        ClinicRoomClientResponse room = getRequiredRoom(dto.getRoomId());
+
+        validateAggregateInvariant(patient, doctor, room);
         throwIfRoomDoubleBooked(dto.getRoomId(), dto.getStartTime(), dto.getEndTime(), appointmentId);
 
         appointment.setPatientId(dto.getPatientId());
@@ -89,7 +111,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.validateTimeSlot();
 
         Appointment savedAppointment = appointmentRepository.save(appointment);
-        return AppointmentMapper.toResponseDTO(savedAppointment);
+        return buildResponse(savedAppointment, patient, doctor, room);
     }
 
     @Override
@@ -101,7 +123,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 ));
 
         appointmentRepository.delete(appointment);
-        return AppointmentMapper.toResponseDTO(appointment);
+        return buildResponse(appointment);
     }
 
     @Override
@@ -113,15 +135,15 @@ public class AppointmentServiceImpl implements AppointmentService {
                 ));
 
         if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new IllegalStateException("A CANCELLED appointment cannot be completed.");
+            throw new AppointmentConflictException("A CANCELLED appointment cannot be completed.");
         }
 
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new IllegalStateException("Appointment is already COMPLETED.");
+            throw new AppointmentConflictException("Appointment is already COMPLETED.");
         }
 
         appointment.setStatus(AppointmentStatus.COMPLETED);
-        return AppointmentMapper.toResponseDTO(appointmentRepository.save(appointment));
+        return buildResponse(appointmentRepository.save(appointment));
     }
 
     @Override
@@ -133,11 +155,11 @@ public class AppointmentServiceImpl implements AppointmentService {
                 ));
 
         if (appointment.getStatus() == AppointmentStatus.COMPLETED) {
-            throw new IllegalStateException("A COMPLETED appointment cannot be cancelled.");
+            throw new AppointmentConflictException("A COMPLETED appointment cannot be cancelled.");
         }
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
-        return AppointmentMapper.toResponseDTO(appointmentRepository.save(appointment));
+        return buildResponse(appointmentRepository.save(appointment));
     }
 
     private void throwIfRoomDoubleBooked(String roomId,
@@ -159,7 +181,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         if (overlap) {
-            throw new IllegalStateException(
+            throw new AppointmentConflictException(
                     "Cannot create or update appointment: the clinic room is already booked for this time slot."
             );
         }
@@ -167,18 +189,81 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private void validateRequest(AppointmentRequestDTO dto) {
         if (dto.getPatientId() == null || dto.getPatientId().isBlank()) {
-            throw new IllegalArgumentException("Patient ID is required.");
+            throw new InvalidInputException("Patient ID is required.");
         }
 
         if (dto.getDoctorId() == null || dto.getDoctorId().isBlank()) {
-            throw new IllegalArgumentException("Doctor ID is required.");
+            throw new InvalidInputException("Doctor ID is required.");
         }
 
         if (dto.getRoomId() == null || dto.getRoomId().isBlank()) {
-            throw new IllegalArgumentException("Room ID is required.");
+            throw new InvalidInputException("Room ID is required.");
         }
 
         TimeSlot timeSlot = new TimeSlot(dto.getStartTime(), dto.getEndTime());
-        timeSlot.validate();
+        try {
+            timeSlot.validate();
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidInputException(ex.getMessage());
+        }
+    }
+
+    private PatientClientResponse getRequiredPatient(String patientId) {
+        return patientServiceClient.getPatientByPatientIdentifier(patientId);
+    }
+
+    private DoctorClientResponse getRequiredDoctor(String doctorId) {
+        return doctorServiceClient.getDoctorByDoctorId(doctorId);
+    }
+
+    private ClinicRoomClientResponse getRequiredRoom(String roomId) {
+        return clinicRoomServiceClient.getRoomByRoomId(roomId);
+    }
+
+    private void validateAggregateInvariant(
+            PatientClientResponse patient,
+            DoctorClientResponse doctor,
+            ClinicRoomClientResponse room
+    ) {
+        if (!"ACTIVE".equalsIgnoreCase(patient.status())) {
+            throw new AppointmentConflictException(
+                    "Patient " + patient.patientIdentifier() + " is not active and cannot be scheduled."
+            );
+        }
+
+        if (!Boolean.TRUE.equals(doctor.isActive()) || !Boolean.TRUE.equals(doctor.isValid())) {
+            throw new DoctorNotEligibleException(
+                    "Doctor " + doctor.doctorId() + " must be active and verified before an appointment can be scheduled."
+            );
+        }
+
+        if (!"AVAILABLE".equalsIgnoreCase(room.roomStatus())) {
+            throw new AppointmentConflictException(
+                    "Clinic room " + room.roomId() + " is not available for booking."
+            );
+        }
+    }
+
+    private AppointmentResponseDTO buildResponse(Appointment appointment) {
+        PatientClientResponse patient = getRequiredPatient(appointment.getPatientId());
+        DoctorClientResponse doctor = getRequiredDoctor(appointment.getDoctorId());
+        ClinicRoomClientResponse room = getRequiredRoom(appointment.getRoomId());
+        return buildResponse(appointment, patient, doctor, room);
+    }
+
+    private AppointmentResponseDTO buildResponse(
+            Appointment appointment,
+            PatientClientResponse patient,
+            DoctorClientResponse doctor,
+            ClinicRoomClientResponse room
+    ) {
+        AppointmentResponseDTO response = AppointmentMapper.toResponseDTO(appointment);
+        response.setPatientFullName(patient.fullName());
+        response.setPatientEmail(patient.email());
+        response.setDoctorFullName(doctor.fullName());
+        response.setRoomName(room.roomName());
+        response.setRoomNumber(room.roomNumber());
+        response.setRoomStatus(room.roomStatus());
+        return response;
     }
 }

@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.4'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.champ.healthcare.ApiGateway'
@@ -15,6 +16,11 @@ java {
 
 repositories {
 	mavenCentral()
+}
+
+jacoco {
+	toolVersion = '0.8.11'
+	reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
 }
 
 dependencies {
@@ -60,4 +66,22 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy(tasks.jacocoTestReport)
+
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+		showExceptions = true
+		showStackTraces = true
+		showStandardStreams = true
+	}
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn(tasks.test)
+
+	reports {
+		xml.required = false
+		csv.required = false
+		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+	}
 }
