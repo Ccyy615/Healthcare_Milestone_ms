@@ -1,6 +1,7 @@
 package com.champ.healthcare.ClinicRoom.BusinessLogicLayer;
 
 import com.champ.healthcare.ClinicRoom.DataAccessLayer.ClinicRoomRepository;
+import com.champ.healthcare.ClinicRoom.DataAccessLayer.SequenceGeneratorService;
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoom;
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoomStatus;
 import com.champ.healthcare.ClinicRoom.Mapper.ClinicRoomMapper;
@@ -10,8 +11,8 @@ import com.champ.healthcare.ClinicRoom.utilities.DuplicateRoomNumberException;
 import com.champ.healthcare.ClinicRoom.utilities.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,15 +23,16 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
 
     private final ClinicRoomRepository clinicRoomRepository;
     private final ClinicRoomMapper clinicRoomMapper;
+    private final SequenceGeneratorService sequenceGeneratorService;
 
     @Override
-    @Transactional(readOnly = true)
     public List<ClinicRoomResponseDTO> getAllRooms() {
-        return clinicRoomMapper.toResponseDTOList(clinicRoomRepository.findAll());
+        return clinicRoomMapper.toResponseDTOList(
+                clinicRoomRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
+        );
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ClinicRoomResponseDTO getRoomById(Long id) {
         ClinicRoom room = clinicRoomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinic room not found with id: " + id));
@@ -39,7 +41,6 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public ClinicRoomResponseDTO getRoomByRoomId(String roomId) {
         ClinicRoom room = clinicRoomRepository.findByRoomId_RoomId(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinic room not found with roomId: " + roomId));
@@ -48,7 +49,6 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
     }
 
     @Override
-    @Transactional
     public ClinicRoomResponseDTO createRoom(ClinicRoomRequestDTO requestDTO) {
         validateRequest(requestDTO);
 
@@ -57,13 +57,13 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
         }
 
         ClinicRoom room = clinicRoomMapper.toEntity(requestDTO);
+        room.setId(sequenceGeneratorService.getNextSequence(SequenceGeneratorService.CLINIC_ROOM_SEQUENCE));
         ClinicRoom savedRoom = clinicRoomRepository.save(room);
 
         return clinicRoomMapper.toResponseDTO(savedRoom);
     }
 
     @Override
-    @Transactional
     public ClinicRoomResponseDTO updateRoom(Long id, ClinicRoomRequestDTO requestDTO) {
         validateRequest(requestDTO);
 
@@ -83,7 +83,6 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
     }
 
     @Override
-    @Transactional
     public ClinicRoomResponseDTO updateRoomStatus(Long id, ClinicRoomStatus roomStatus) {
         if (roomStatus == null) {
             throw new IllegalArgumentException("Room status is required.");
@@ -99,7 +98,6 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
     }
 
     @Override
-    @Transactional
     public ClinicRoomResponseDTO deleteRoom(Long id) {
         ClinicRoom room = clinicRoomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Clinic room not found with id: " + id));

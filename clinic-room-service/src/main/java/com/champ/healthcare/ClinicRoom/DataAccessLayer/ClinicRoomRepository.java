@@ -1,11 +1,13 @@
 package com.champ.healthcare.ClinicRoom.DataAccessLayer;
 
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoom;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
 
-public interface ClinicRoomRepository extends JpaRepository<ClinicRoom, Long> {
+public interface ClinicRoomRepository extends MongoRepository<ClinicRoom, String> {
+
+    Optional<ClinicRoom> findById(Long id);
 
     Optional<ClinicRoom> findByRoomId_RoomId(String roomId);
 

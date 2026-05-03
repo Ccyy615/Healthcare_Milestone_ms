@@ -3,20 +3,17 @@
 
 LAYOUT_TOP_DOWN()
 
-title System Context Diagram for Healthcare Appointment Scheduling System
+title Milestone 2 C4 Level 1 - System Context
 
 Person(patient, "Patient", "Books, views, reschedules, or cancels appointments.")
 Person(receptionist, "Receptionist", "Schedules and manages appointments for patients.")
 Person(doctor, "Doctor", "Views assigned appointments and daily schedule information.")
 
-System(healthcare_system, "Healthcare Appointment Scheduling System", "Provides appointment scheduling, patient record, doctor directory, and clinic room management capabilities.")
-
-System_Ext(notification_service, "Notification Service", "Sends confirmations, reminders, and cancellation messages.")
+System(healthcare_system, "Healthcare Appointment Scheduling System", "A microservices-based healthcare scheduling system exposed through a single API Gateway.")
 
 Rel(patient, healthcare_system, "Uses", "HTTPS")
 Rel(receptionist, healthcare_system, "Uses", "HTTPS")
 Rel(doctor, healthcare_system, "Uses", "HTTPS")
-Rel(healthcare_system, notification_service, "Sends appointment notifications using", "REST/HTTPS")
 
 SHOW_LEGEND()
 

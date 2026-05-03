@@ -3,49 +3,53 @@
 
 LAYOUT_TOP_DOWN()
 
-title Container Diagram for Healthcare Appointment Scheduling System
+title Milestone 2 C4 Level 2 - Containers
 
 Person(patient, "Patient", "Books, views, reschedules, or cancels appointments.")
 Person(receptionist, "Receptionist", "Schedules and manages appointments for patients.")
 Person(doctor, "Doctor", "Views assigned appointments and daily schedule information.")
 
-System_Ext(notification_service, "Notification Service", "Sends confirmations, reminders, and cancellation messages.")
-
 System_Boundary(healthcare_system, "Healthcare Appointment Scheduling System") {
-    Container(web_application, "Web Application", "JavaScript, React", "Delivers the single-page application shell to the browser.")
-    Container(single_page_app, "Single-page Application", "JavaScript, React", "Provides the appointment scheduling user interface in the browser.")
-    Container(api_gateway, "API Gateway", "Java, Spring Boot", "Exposes the public REST API and is the intended HATEOAS boundary.")
-    Container(appointment_service, "appointment-scheduling-service", "Java, Spring Boot", "Coordinates booking, confirmation, rescheduling, and cancellation workflows.")
-    Container(clinic_room_service, "clinic-availability-service", "Java, Spring Boot", "Manages clinic room metadata, status, and availability.")
-    Container(patient_service, "patient-records-service", "Java, Spring Boot", "Manages patient records and patient-specific validation rules.")
-    Container(doctor_service, "doctor-directory-service", "Java, Spring Boot", "Manages doctor profiles, specialties, work zones, and license eligibility.")
-    ContainerDb(appointment_db, "Appointments DB", "MySQL", "Stores appointment schedules and scheduling history.")
-    ContainerDb(patient_db, "Patients DB", "MySQL", "Stores patient records.")
-    ContainerDb(doctor_db, "Doctors DB", "PostgreSQL", "Stores doctor profiles, specialties, and license data.")
-    ContainerDb(clinic_room_db, "Clinic Rooms DB", "PostgreSQL", "Stores clinic room metadata and availability state.")
+    Container(api_gateway, "apigateway-service", "Java, Spring Boot", "Single public entry point on port 8080. Exposes all downstream REST endpoints and serves as the HATEOAS boundary.")
+    Container(appointment_service, "appointment-service", "Java, Spring Boot", "Aggregator/orchestrator microservice for the Appointment aggregate. Enforces the aggregate invariant through a domain client layer.")
+    Container(patient_service, "patient-service", "Java, Spring Boot", "Low-level microservice for patient records.")
+    Container(doctor_service, "doctor-service", "Java, Spring Boot", "Low-level microservice for doctor profiles, specialties, work zones, and license eligibility.")
+    Container(clinic_room_service, "clinic-room-service", "Java, Spring Boot", "Low-level microservice for clinic room metadata and availability.")
+    ContainerDb(appointment_db, "appointment-db", "MySQL", "Stores appointments and medical notes for the aggregate.")
+    ContainerDb(patient_db, "patient-db", "MySQL", "Stores patient records.")
+    ContainerDb(doctor_db, "doctor-db", "PostgreSQL", "Stores doctors, specialties, and licenses.")
+    ContainerDb(clinic_room_db, "clinic-room-db", "MongoDB", "Stores clinic room documents and room availability state.")
+    Container(patient_db_admin, "patient-db-admin", "Adminer", "Internal database GUI for the patient MySQL database.")
+    Container(doctor_db_admin, "doctor-db-admin", "Adminer", "Internal database GUI for the doctor PostgreSQL database.")
+    Container(appointment_db_admin, "appointment-db-admin", "Adminer", "Internal database GUI for the appointment MySQL database.")
+    Container(clinic_room_db_admin, "clinic-room-db-admin", "Mongo Express", "Internal database GUI for the clinic room MongoDB database.")
+    Boundary(internal_only, "Network Constraint") {
+      Container(constraint_note, "Internal Access Rule", "Docker network", "Only the API Gateway publishes a host port. All other services and database GUIs remain internal to the Docker network.")
+    }
 }
 
-Rel(patient, web_application, "Uses", "HTTPS")
-Rel(receptionist, web_application, "Uses", "HTTPS")
-Rel(doctor, web_application, "Uses", "HTTPS")
-
-Rel(web_application, single_page_app, "Delivers to the browser")
-Rel(single_page_app, api_gateway, "Makes API calls to", "JSON/REST/HTTPS")
+Rel(patient, api_gateway, "Uses", "JSON/REST over HTTPS")
+Rel(receptionist, api_gateway, "Uses", "JSON/REST over HTTPS")
+Rel(doctor, api_gateway, "Uses", "JSON/REST over HTTPS")
 
 Rel(api_gateway, appointment_service, "Routes appointment workflow calls to", "JSON/REST/HTTPS")
-Rel(api_gateway, clinic_room_service, "Routes clinic room calls to", "JSON/REST/HTTPS")
 Rel(api_gateway, patient_service, "Routes patient record calls to", "JSON/REST/HTTPS")
 Rel(api_gateway, doctor_service, "Routes doctor directory calls to", "JSON/REST/HTTPS")
+Rel(api_gateway, clinic_room_service, "Routes clinic room calls to", "JSON/REST/HTTPS")
 
 Rel(appointment_service, appointment_db, "Reads from and writes to", "JDBC/SQL")
-Rel(appointment_service, clinic_room_service, "Checks and reserves room availability with", "JSON/REST/HTTPS")
 Rel(appointment_service, patient_service, "Retrieves patient information from", "JSON/REST/HTTPS")
 Rel(appointment_service, doctor_service, "Retrieves doctor information from", "JSON/REST/HTTPS")
-Rel(appointment_service, notification_service, "Sends notification requests to", "JSON/REST/HTTPS")
+Rel(appointment_service, clinic_room_service, "Retrieves room availability from", "JSON/REST/HTTPS")
 
-Rel(clinic_room_service, clinic_room_db, "Reads from and writes to", "JDBC/SQL")
 Rel(patient_service, patient_db, "Reads from and writes to", "JDBC/SQL")
 Rel(doctor_service, doctor_db, "Reads from and writes to", "JDBC/SQL")
+Rel(clinic_room_service, clinic_room_db, "Reads from and writes to", "MongoDB")
+
+Rel(patient_db_admin, patient_db, "Administers", "SQL")
+Rel(doctor_db_admin, doctor_db, "Administers", "SQL")
+Rel(appointment_db_admin, appointment_db, "Administers", "SQL")
+Rel(clinic_room_db_admin, clinic_room_db, "Administers", "MongoDB")
 
 SHOW_LEGEND()
 

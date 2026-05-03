@@ -1,6 +1,6 @@
 @startuml
 
-title Updated DDD Domain Model for Healthcare Appointment Scheduling System
+title Milestone 2 DDD Domain Model for Healthcare Appointment Scheduling System
 
 left to right direction
 skinparam packageStyle rectangle
@@ -198,11 +198,22 @@ Appointment ..> ClinicRoomIdentifier : references by id
 MedicalNote ..> PatientIdentifier : references by id
 MedicalNote ..> DoctorIdentifier : references by id
 
-note bottom of Appointment
-Milestone 1 implements the three independent supporting bounded contexts:
-Patient Records, Doctor Directory, and Clinic Availability.
-Appointment orchestration remains the next aggregate-focused step and crosses
-context boundaries only through foreign identifiers.
+note right of Appointment
+Aggregate Invariant enforced by the Appointment aggregate and its
+orchestrating microservice:
+
+1. The referenced Patient must exist and have status ACTIVE.
+2. The referenced Doctor must exist and be both active and verified.
+3. The referenced Clinic Room must exist and have status AVAILABLE.
+4. No overlapping Appointment may exist for the same room and time slot.
+
+Cross-context rules are enforced through identifier-based lookups only:
+patientId, doctorId, and roomId.
+end note
+
+note bottom of MedicalNote
+MedicalNote is part of the Appointment Scheduling bounded context
+and documents an existing Appointment.
 end note
 
 @enduml

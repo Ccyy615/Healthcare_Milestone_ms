@@ -31,19 +31,19 @@ services:
       start_period: 20s
 
   clinic-room-db:
-    image: postgres:16
+    image: mongo:7.0
     environment:
-      POSTGRES_DB: clinic_room_service
-      POSTGRES_USER: clinic_room_user
-      POSTGRES_PASSWORD: clinic_room_pwd
+      MONGO_INITDB_ROOT_USERNAME: clinic_room_root
+      MONGO_INITDB_ROOT_PASSWORD: clinic_room_pwd
+      MONGO_INITDB_DATABASE: clinic_room_service
     volumes:
-      - clinic_room_postgres_data:/var/lib/postgresql/data
+      - clinic_room_mongo_data:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clinic_room_user -d clinic_room_service"]
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" mongodb://clinic_room_root:clinic_room_pwd@localhost:27017/admin | grep 1"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 30s
 
   appointment-db:
     image: mysql:8.0
@@ -82,11 +82,14 @@ services:
         condition: service_healthy
 
   clinic-room-db-admin:
-    image: adminer:latest
+    image: mongo-express:latest
     expose:
-      - "8080"
+      - "8081"
     environment:
-      ADMINER_DEFAULT_SERVER: clinic-room-db
+      ME_CONFIG_MONGODB_ADMINUSERNAME: clinic_room_root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: clinic_room_pwd
+      ME_CONFIG_MONGODB_URL: mongodb://clinic_room_root:clinic_room_pwd@clinic-room-db:27017/
+      ME_CONFIG_BASICAUTH: "false"
     depends_on:
       clinic-room-db:
         condition: service_healthy
@@ -167,5 +170,5 @@ services:
 volumes:
   patient_mysql_data:
   doctor_postgres_data:
-  clinic_room_postgres_data:
+  clinic_room_mongo_data:
   appointment_mysql_data:

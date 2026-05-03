@@ -199,6 +199,11 @@ public class DoctorService {
         );
 
         doctor.setLicense(license);
+        if (doctor.hasValidLicense()) {
+            doctor.verify();
+        } else {
+            doctor.unverify();
+        }
 
         Doctor savedDoctor = doctorRepository.save(doctor);
         return doctorMapper.toResponseDTO(savedDoctor);

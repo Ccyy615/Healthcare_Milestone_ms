@@ -3,6 +3,7 @@ package com.champ.healthcare.ApiGateway.Doctor.PresentationLayer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DoctorResponseDTO {
+public class DoctorResponseDTO extends RepresentationModel<DoctorResponseDTO> {
 
     private String doctorId;
     private String doctorFirstName;

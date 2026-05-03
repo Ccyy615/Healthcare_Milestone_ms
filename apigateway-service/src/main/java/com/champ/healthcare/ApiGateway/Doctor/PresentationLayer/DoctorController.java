@@ -16,22 +16,25 @@ import java.util.List;
 public class DoctorController {
 
     private final DoctorService doctorService;
+    private final DoctorModelAssembler doctorModelAssembler;
 
     @GetMapping
     public ResponseEntity<List<DoctorResponseDTO>> getAllDoctors() {
-        return ResponseEntity.ok(doctorService.getAllDoctors());
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(doctorService.getAllDoctors()));
     }
 
     @GetMapping("/{doctorId}")
     public ResponseEntity<DoctorResponseDTO> getDoctorById(@PathVariable String doctorId) {
-        return ResponseEntity.ok(doctorService.getDoctorById(doctorId));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(doctorService.getDoctorById(doctorId)));
     }
 
     @PostMapping
     public ResponseEntity<DoctorResponseDTO> createDoctor(
             @Valid @RequestBody DoctorRequestDTO doctorRequestDTO
     ) {
-        DoctorResponseDTO createdDoctor = doctorService.createDoctor(doctorRequestDTO);
+        DoctorResponseDTO createdDoctor = doctorModelAssembler.addLinks(
+                doctorService.createDoctor(doctorRequestDTO)
+        );
         URI location = URI.create("/api/v1/doctors/" + createdDoctor.getDoctorId());
         return ResponseEntity.created(location).body(createdDoctor);
     }
@@ -41,29 +44,33 @@ public class DoctorController {
             @PathVariable String doctorId,
             @Valid @RequestBody DoctorRequestDTO doctorRequestDTO
     ) {
-        return ResponseEntity.ok(doctorService.updateDoctor(doctorId, doctorRequestDTO));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(
+                doctorService.updateDoctor(doctorId, doctorRequestDTO)
+        ));
     }
 
     @GetMapping("/active")
     public ResponseEntity<List<DoctorResponseDTO>> getActiveDoctors() {
-        return ResponseEntity.ok(doctorService.getActiveDoctors());
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(doctorService.getActiveDoctors()));
     }
 
     @GetMapping("/active/speciality/{specialityName}")
     public ResponseEntity<List<DoctorResponseDTO>> getActiveDoctorBySpeciality(
             @PathVariable String specialityName
     ) {
-        return ResponseEntity.ok(doctorService.getActiveDoctorBySpeciality(specialityName));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(
+                doctorService.getActiveDoctorBySpeciality(specialityName)
+        ));
     }
 
     @PostMapping("/{doctorId}/activate")
     public ResponseEntity<DoctorResponseDTO> activateDoctor(@PathVariable String doctorId) {
-        return ResponseEntity.ok(doctorService.activateDoctor(doctorId));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(doctorService.activateDoctor(doctorId)));
     }
 
     @PostMapping("/{doctorId}/deactivate")
     public ResponseEntity<DoctorResponseDTO> deactivateDoctor(@PathVariable String doctorId) {
-        return ResponseEntity.ok(doctorService.deactivateDoctor(doctorId));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(doctorService.deactivateDoctor(doctorId)));
     }
 
     @PatchMapping("/{doctorId}/activation")
@@ -71,7 +78,9 @@ public class DoctorController {
             @PathVariable String doctorId,
             @RequestBody DoctorActivationPatchDTO patchDTO
     ) {
-        return ResponseEntity.ok(doctorService.updateDoctorActivation(doctorId, patchDTO.getActive()));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(
+                doctorService.updateDoctorActivation(doctorId, patchDTO.getActive())
+        ));
     }
 
     @PostMapping("/{doctorId}/speciality")
@@ -79,7 +88,9 @@ public class DoctorController {
             @PathVariable String doctorId,
             @Valid @RequestBody SpecialityRequestDTO specialityDTO
     ) {
-        return ResponseEntity.ok(doctorService.addSpeciality(doctorId, specialityDTO));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(
+                doctorService.addSpeciality(doctorId, specialityDTO)
+        ));
     }
 
     @DeleteMapping("/{doctorId}/speciality/{specialityName}")
@@ -87,7 +98,9 @@ public class DoctorController {
             @PathVariable String doctorId,
             @PathVariable String specialityName
     ) {
-        return ResponseEntity.ok(doctorService.removeSpeciality(doctorId, specialityName));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(
+                doctorService.removeSpeciality(doctorId, specialityName)
+        ));
     }
 
     @PostMapping("/{doctorId}/license")
@@ -95,12 +108,14 @@ public class DoctorController {
             @PathVariable String doctorId,
             @Valid @RequestBody LicenseRequestDTO requestDTO
     ) {
-        return ResponseEntity.ok(doctorService.addLicense(doctorId, requestDTO));
+        return ResponseEntity.ok(doctorModelAssembler.addLinks(
+                doctorService.addLicense(doctorId, requestDTO)
+        ));
     }
 
     @DeleteMapping("/{doctorId}")
     public ResponseEntity<DoctorResponseDTO> deleteDoctor(@PathVariable String doctorId) {
-        DoctorResponseDTO doctor = doctorService.getDoctorById(doctorId);
+        DoctorResponseDTO doctor = doctorModelAssembler.addLinks(doctorService.getDoctorById(doctorId));
         doctorService.deleteDoctor(doctorId);
         return ResponseEntity.status(HttpStatus.OK).body(doctor);
     }

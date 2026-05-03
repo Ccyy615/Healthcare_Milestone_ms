@@ -1,10 +1,21 @@
 package com.champ.healthcare.ClinicRoom.Domain;
 
-import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "clinic_rooms")
+@Document(collection = "clinic_rooms")
+@CompoundIndexes({
+        @CompoundIndex(name = "clinic_room_public_id_idx", def = "{'id': 1}", unique = true),
+        @CompoundIndex(name = "clinic_room_identifier_idx", def = "{'roomId.roomId': 1}", unique = true),
+        @CompoundIndex(name = "clinic_room_number_idx", def = "{'roomNumber': 1}", unique = true)
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -13,25 +24,16 @@ import lombok.*;
 public class ClinicRoom {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    private String documentId;
+
     private Long id;
 
-    @Embedded
-    @AttributeOverride(
-            name = "roomId",
-            column = @Column(name = "room_id", nullable = false, unique = true)
-    )
     private ClinicRoomIdentifier roomId;
 
-    @Column(name = "room_name", nullable = false)
     private String roomName;
 
-    @Column(name = "room_number", nullable = false)
     private String roomNumber;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "room_status", nullable = false)
     private ClinicRoomStatus roomStatus;
 
     public boolean isAvailableForBooking() {

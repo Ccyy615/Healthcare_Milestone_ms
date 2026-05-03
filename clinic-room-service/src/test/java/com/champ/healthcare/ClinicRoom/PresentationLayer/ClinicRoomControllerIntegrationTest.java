@@ -107,4 +107,23 @@ class ClinicRoomControllerIntegrationTest {
                 .jsonPath("$.id").isEqualTo(1)
                 .jsonPath("$.roomStatus").isEqualTo("OUT_OF_SERVICE");
     }
+
+    @Test
+    void updateRoomReturnsUpdatedRoom() {
+        webTestClient.put()
+                .uri("/api/v1/clinic-rooms/{id}", 2)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "roomName": "Updated Consultation Room",
+                          "roomNumber": "102A",
+                          "roomStatus": "AVAILABLE"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(2)
+                .jsonPath("$.roomNumber").isEqualTo("102A");
+    }
 }

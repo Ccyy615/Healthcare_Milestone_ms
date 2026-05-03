@@ -122,7 +122,8 @@ class DoctorControllerIntegrationTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.doctorId").isEqualTo(createdDoctor.getDoctorId())
-                .jsonPath("$.isActive").isEqualTo(true);
+                .jsonPath("$.isActive").isEqualTo(true)
+                .jsonPath("$.isValid").isEqualTo(true);
     }
 
     @Test

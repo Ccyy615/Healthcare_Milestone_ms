@@ -346,6 +346,7 @@ class DoctorServiceUnitTest {
         assertThat(doctor.getLicense()).isNotNull();
         assertThat(doctor.getLicense().getLicenseName()).isEqualTo("Practice License");
         assertThat(doctor.getLicense().getStatus()).isEqualTo(LicenseStatus.VALID);
+        assertThat(doctor.getIsValid()).isTrue();
     }
 
     @Test

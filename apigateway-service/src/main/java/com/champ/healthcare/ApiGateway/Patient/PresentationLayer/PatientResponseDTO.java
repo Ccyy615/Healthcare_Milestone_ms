@@ -3,13 +3,14 @@ package com.champ.healthcare.ApiGateway.Patient.PresentationLayer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.hateoas.RepresentationModel;
 
 import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PatientResponseDTO {
+public class PatientResponseDTO extends RepresentationModel<PatientResponseDTO> {
 
     private Long id;
     private String patientId;

@@ -18,28 +18,33 @@ import java.util.List;
 public class ClinicRoomController {
 
     private final ClinicRoomService clinicRoomService;
+    private final ClinicRoomModelAssembler clinicRoomModelAssembler;
 
     @GetMapping
     public ResponseEntity<List<ClinicRoomResponseDTO>> getAllRooms() {
         List<ClinicRoomResponseDTO> rooms = clinicRoomService.getAllRooms();
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(clinicRoomModelAssembler.addLinks(rooms));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ClinicRoomResponseDTO> getRoomById(@PathVariable Long id) {
-        return ResponseEntity.ok(clinicRoomService.getRoomById(id));
+        return ResponseEntity.ok(clinicRoomModelAssembler.addLinks(clinicRoomService.getRoomById(id)));
     }
 
     @GetMapping("/room-identifier/{roomId}")
     public ResponseEntity<ClinicRoomResponseDTO> getRoomByRoomId(@PathVariable String roomId) {
-        return ResponseEntity.ok(clinicRoomService.getRoomByRoomId(roomId));
+        return ResponseEntity.ok(clinicRoomModelAssembler.addLinks(
+                clinicRoomService.getRoomByRoomId(roomId)
+        ));
     }
 
     @PostMapping
     public ResponseEntity<ClinicRoomResponseDTO> createRoom(
             @Valid @RequestBody ClinicRoomRequestDTO requestDTO
     ) {
-        ClinicRoomResponseDTO createdRoom = clinicRoomService.createRoom(requestDTO);
+        ClinicRoomResponseDTO createdRoom = clinicRoomModelAssembler.addLinks(
+                clinicRoomService.createRoom(requestDTO)
+        );
         URI location = URI.create("/api/v1/clinic-rooms/" + createdRoom.getId());
         return ResponseEntity.created(location).body(createdRoom);
     }
@@ -49,7 +54,9 @@ public class ClinicRoomController {
             @PathVariable Long id,
             @Valid @RequestBody ClinicRoomRequestDTO requestDTO
     ) {
-        return ResponseEntity.ok(clinicRoomService.updateRoom(id, requestDTO));
+        return ResponseEntity.ok(clinicRoomModelAssembler.addLinks(
+                clinicRoomService.updateRoom(id, requestDTO)
+        ));
     }
 
     @PatchMapping("/{id}/status")
@@ -57,11 +64,14 @@ public class ClinicRoomController {
             @PathVariable Long id,
             @RequestBody ClinicRoomStatusPatchDTO patchDTO
     ) {
-        return ResponseEntity.ok(clinicRoomService.updateRoomStatus(id, patchDTO));
+        return ResponseEntity.ok(clinicRoomModelAssembler.addLinks(
+                clinicRoomService.updateRoomStatus(id, patchDTO)
+        ));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ClinicRoomResponseDTO> deleteRoom(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.OK).body(clinicRoomService.deleteRoom(id));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(clinicRoomModelAssembler.addLinks(clinicRoomService.deleteRoom(id)));
     }
 }

@@ -1,6 +1,7 @@
 package com.champ.healthcare.ClinicRoom.BusinessLogicLayer;
 
 import com.champ.healthcare.ClinicRoom.DataAccessLayer.ClinicRoomRepository;
+import com.champ.healthcare.ClinicRoom.DataAccessLayer.SequenceGeneratorService;
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoom;
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoomIdentifier;
 import com.champ.healthcare.ClinicRoom.Domain.ClinicRoomStatus;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class ClinicRoomServiceImplTest {
@@ -32,6 +35,9 @@ class ClinicRoomServiceImplTest {
     @Mock
     private ClinicRoomMapper clinicRoomMapper;
 
+    @Mock
+    private SequenceGeneratorService sequenceGeneratorService;
+
     @InjectMocks
     private ClinicRoomServiceImpl clinicRoomService;
 
@@ -40,7 +46,7 @@ class ClinicRoomServiceImplTest {
         List<ClinicRoom> rooms = List.of(room(1L, "101"), room(2L, "102"));
         List<ClinicRoomResponseDTO> responses = List.of(response(1L, "101"), response(2L, "102"));
 
-        when(clinicRoomRepository.findAll()).thenReturn(rooms);
+        when(clinicRoomRepository.findAll(any(Sort.class))).thenReturn(rooms);
         when(clinicRoomMapper.toResponseDTOList(rooms)).thenReturn(responses);
 
         List<ClinicRoomResponseDTO> result = clinicRoomService.getAllRooms();
@@ -152,6 +158,8 @@ class ClinicRoomServiceImplTest {
         ClinicRoom saved = room(1L, "101");
         ClinicRoomResponseDTO response = response(1L, "101");
 
+        when(sequenceGeneratorService.getNextSequence(SequenceGeneratorService.CLINIC_ROOM_SEQUENCE))
+                .thenReturn(1L);
         when(clinicRoomMapper.toEntity(request)).thenReturn(mapped);
         when(clinicRoomRepository.save(mapped)).thenReturn(saved);
         when(clinicRoomMapper.toResponseDTO(saved)).thenReturn(response);
@@ -159,6 +167,7 @@ class ClinicRoomServiceImplTest {
         ClinicRoomResponseDTO result = clinicRoomService.createRoom(request);
 
         assertThat(result).isSameAs(response);
+        assertThat(mapped.getId()).isEqualTo(1L);
     }
 
     @Test
