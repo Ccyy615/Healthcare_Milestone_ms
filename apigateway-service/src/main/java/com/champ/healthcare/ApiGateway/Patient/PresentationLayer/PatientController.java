@@ -1,6 +1,8 @@
 package com.champ.healthcare.ApiGateway.Patient.PresentationLayer;
 
 import com.champ.healthcare.ApiGateway.Patient.BusinessLogicLayer.PatientService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,7 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
+
 @RestController
+@Tag(name = "Patient Controller", description = "API for patient")
 @RequestMapping("/api/v1/patients")
 @RequiredArgsConstructor
 public class PatientController {
@@ -21,7 +25,7 @@ public class PatientController {
     public ResponseEntity<List<PatientResponseDTO>> getAllPatients() {
         return ResponseEntity.ok(patientModelAssembler.addLinks(patientService.getAllPatients()));
     }
-
+    @Operation(summary = "Retrieves all patients by Id", description = "gives a Long id to patient from service")
     @GetMapping("/{id}")
     public ResponseEntity<PatientResponseDTO> getPatientById(@PathVariable Long id) {
         return ResponseEntity.ok(patientModelAssembler.addLinks(patientService.getPatientById(id)));

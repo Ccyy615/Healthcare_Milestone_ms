@@ -2,9 +2,34 @@
 
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:8080}"
+# Sample usage:
+#   ./milestone2-integration-test.sh
+#   ./milestone2-integration-test.sh start
+#   ./milestone2-integration-test.sh start stop
+#   HOST=localhost PORT=8080 ./milestone2-integration-test.sh
+#
+# All requests go through the API Gateway only.
+
+: "${HOST:=localhost}"
+: "${PORT:=8080}"
+BASE_URL="${BASE_URL:-http://${HOST}:${PORT}}"
 RESPONSE_BODY=""
 RESPONSE_STATUS=""
+
+assert_equal() {
+  local expected="$1"
+  local actual="$2"
+  local label="$3"
+
+  if [[ "$expected" != "$actual" ]]; then
+    echo "FAIL: $label"
+    echo "Expected: $expected"
+    echo "Actual:   $actual"
+    exit 1
+  fi
+
+  echo "PASS: $label"
+}
 
 request() {
   local method="$1"
@@ -60,6 +85,32 @@ assert_contains() {
   echo "PASS: $label"
 }
 
+test_url() {
+  local url="$1"
+  curl "$url" -ks -f -o /dev/null
+}
+
+wait_for_service() {
+  local url="$1"
+  local attempt=0
+
+  echo -n "Waiting for $url"
+  until test_url "$url"; do
+    attempt=$((attempt + 1))
+    if [[ "$attempt" -ge 60 ]]; then
+      echo
+      echo "FAIL: Service did not become ready: $url"
+      exit 1
+    fi
+
+    echo -n "."
+    sleep 5
+  done
+
+  echo
+  echo "PASS: Service is reachable"
+}
+
 extract_number() {
   local key="$1"
   printf '%s' "$RESPONSE_BODY" | sed -nE "s/.*\"$key\":([0-9]+).*/\\1/p"
@@ -72,6 +123,14 @@ extract_string() {
 
 echo "Base URL: $BASE_URL"
 echo "Running Milestone 2 integration checks through the API gateway only."
+
+if [[ " $* " == *" start "* ]]; then
+  echo "Restarting Docker Compose stack..."
+  docker compose down
+  docker compose up -d --build
+fi
+
+wait_for_service "$BASE_URL/actuator/health"
 
 request POST "/api/v1/patients" '{
   "fullName": "Jordan Miles",
@@ -93,6 +152,7 @@ request POST "/api/v1/patients" '{
 assert_status 201 "Create patient"
 PATIENT_NUMERIC_ID="$(extract_number "id")"
 PATIENT_IDENTIFIER="$(extract_string "patientId")"
+assert_equal "Jordan Miles" "$(extract_string "fullName")" "Patient create response full name"
 assert_contains "\"fullName\":\"Jordan Miles\"" "Patient create response contains patient data"
 
 request GET "/api/v1/patients/$PATIENT_NUMERIC_ID"
@@ -111,6 +171,7 @@ request POST "/api/v1/doctors" '{
 }'
 assert_status 201 "Create doctor"
 DOCTOR_ID="$(extract_string "doctorId")"
+assert_equal "Avery" "$(extract_string "doctorFirstName")" "Doctor create response first name"
 assert_contains "\"doctorFirstName\":\"Avery\"" "Doctor create response contains doctor data"
 
 request GET "/api/v1/doctors/$DOCTOR_ID"
@@ -138,6 +199,7 @@ request POST "/api/v1/clinic-rooms" '{
 assert_status 201 "Create clinic room"
 ROOM_NUMERIC_ID="$(extract_number "id")"
 ROOM_IDENTIFIER="$(extract_string "roomId")"
+assert_equal "Consultation Room A" "$(extract_string "roomName")" "Clinic room create response name"
 assert_contains "\"roomName\":\"Consultation Room A\"" "Clinic room create response contains room data"
 
 request GET "/api/v1/clinic-rooms/$ROOM_NUMERIC_ID"
@@ -154,6 +216,7 @@ request POST "/api/v1/appointments" "{
 }"
 assert_status 201 "Create appointment"
 APPOINTMENT_ID="$(extract_number "appointmentId")"
+assert_equal "$PATIENT_IDENTIFIER" "$(extract_string "patientId")" "Appointment create response patient id"
 assert_contains "\"patientId\":\"$PATIENT_IDENTIFIER\"" "Appointment create response contains patient identifier"
 
 request GET "/api/v1/appointments"
@@ -204,3 +267,8 @@ assert_status 200 "Delete appointment"
 assert_contains "\"appointmentId\":$SECOND_APPOINTMENT_ID" "Delete appointment response contains deleted identifier"
 
 echo "All Milestone 2 gateway integration checks passed."
+
+if [[ " $* " == *" stop "* ]]; then
+  echo "Stopping Docker Compose stack..."
+  docker compose down
+fi

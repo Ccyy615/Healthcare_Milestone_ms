@@ -1,0 +1,14 @@
+server:
+    port: 8080
+services:
+    appointment:
+        url: ${APPOINTMENT_SERVICE_URL:http://appointment-service:8080}
+    clinic-room:
+        url: ${CLINIC_ROOM_SERVICE_URL:http://clinic-room-service:8080}
+    doctor:
+        url: ${DOCTOR_SERVICE_URL:http://doctor-service:8080}
+    patient:
+        url: ${PATIENT_SERVICE_URL:http://patient-service:8080}
+spring:
+    application:
+        name: apigateway-service
