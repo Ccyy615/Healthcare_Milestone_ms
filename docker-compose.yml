@@ -159,16 +159,6 @@ services:
       appointment-service:
         condition: service_started
 
-  swagger-ui:
-      image: swaggerapi/swagger-ui
-      ports:
-        - "8081:8080"
-      environment:
-        - API_URL=http://localhost:8080/v3/api-docs
-      depends_on:
-        - apigateway-service
-
-
 volumes:
   patient_mysql_data:
   doctor_postgres_data:
