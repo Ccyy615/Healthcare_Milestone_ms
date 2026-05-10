@@ -1,7 +1,6 @@
 package com.champ.healthcare.Doctor.DataAccessLayer;
 
 import com.champ.healthcare.Doctor.Domain.Doctor;
-import com.champ.healthcare.Doctor.Domain.Speciality;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,5 +12,5 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
     List<Doctor> findByIsActiveTrue();
 
-    List<Doctor> findByIsActiveTrueAndSpecialityIn(List<Speciality> speciality);
+    List<Doctor> findByIsActiveTrueAndSpeciality_SpecialityIgnoreCase(String speciality);
 }

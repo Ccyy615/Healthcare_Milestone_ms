@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 @Service
@@ -69,7 +71,7 @@ public class PatientServiceImpl implements PatientService {
 
         return execute(() -> webClient.post()
                 .uri(BASE_PATH)
-                .bodyValue(patientRequestDTO)
+                .bodyValue(toDownstreamRequest(patientRequestDTO))
                 .retrieve()
                 .bodyToMono(PatientResponseDTO.class)
                 .block());
@@ -81,7 +83,7 @@ public class PatientServiceImpl implements PatientService {
 
         return execute(() -> webClient.put()
                 .uri(BASE_PATH + "/" + id)
-                .bodyValue(patientRequestDTO)
+                .bodyValue(toDownstreamRequest(patientRequestDTO))
                 .retrieve()
                 .bodyToMono(PatientResponseDTO.class)
                 .block());
@@ -116,5 +118,31 @@ public class PatientServiceImpl implements PatientService {
         } catch (WebClientResponseException ex) {
             throw WebClientErrorMapper.map("Patient service", ex);
         }
+    }
+
+    private Map<String, Object> toDownstreamRequest(PatientRequestDTO requestDTO) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("fullName", requestDTO.getFullName());
+        payload.put("dateOfBirth", requestDTO.getDateOfBirth());
+        payload.put("gender", requestDTO.getGender());
+        payload.put("contactInfo", Map.of(
+                "email", requestDTO.getEmail(),
+                "phone", requestDTO.getPhone()
+        ));
+        payload.put("address", Map.of(
+                "street", requestDTO.getStreet(),
+                "city", requestDTO.getCity(),
+                "province", requestDTO.getProvince(),
+                "postal_code", requestDTO.getPostal_code(),
+                "country", requestDTO.getCountry()
+        ));
+        payload.put("insuranceNumber", requestDTO.getInsuranceNumber());
+        payload.put("allergy", Map.of(
+                "substance", requestDTO.getSubstance(),
+                "reaction", requestDTO.getReaction()
+        ));
+        payload.put("bloodType", requestDTO.getBloodType());
+        payload.put("status", requestDTO.getStatus() != null ? requestDTO.getStatus().getStatus() : null);
+        return payload;
     }
 }

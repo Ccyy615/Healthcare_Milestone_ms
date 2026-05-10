@@ -21,7 +21,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -145,7 +144,7 @@ class DoctorServiceUnitTest {
         Doctor activeDoctor = doctor("doctor-1");
         DoctorResponseDTO response = response("doctor-1");
 
-        when(doctorRepository.findByIsActiveTrueAndSpecialityIn(anyList()))
+        when(doctorRepository.findByIsActiveTrueAndSpeciality_SpecialityIgnoreCase("Cardiology"))
                 .thenReturn(List.of(activeDoctor));
         when(doctorMapper.toResponseDTO(activeDoctor)).thenReturn(response);
 

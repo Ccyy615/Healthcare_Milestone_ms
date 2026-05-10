@@ -202,4 +202,59 @@ class DoctorControllerIntegrationTest {
                 .jsonPath("$.doctorId").isEqualTo(createdDoctor.getDoctorId())
                 .jsonPath("$.isActive").isEqualTo(false);
     }
+
+    @Test
+    void getActiveDoctorBySpecialityIncludesActivatedDoctor() {
+        DoctorResponseDTO createdDoctor = webTestClient.post()
+                .uri("/api/v1/doctors")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "doctorFirstName": "Casey",
+                          "doctorLastName": "Hart",
+                          "workZone": {
+                            "city": "Montreal",
+                            "province": "Quebec"
+                          },
+                          "speciality": [
+                            {
+                              "speciality": "Cardiology",
+                              "proficiencyLevel": "EXPERT"
+                            }
+                          ]
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(DoctorResponseDTO.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertThat(createdDoctor).isNotNull();
+
+        webTestClient.post()
+                .uri("/api/v1/doctors/{doctorId}/license", createdDoctor.getDoctorId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {
+                          "licenseName": "General Practice License",
+                          "status": "VALID"
+                        }
+                        """)
+                .exchange()
+                .expectStatus().isOk();
+
+        webTestClient.post()
+                .uri("/api/v1/doctors/{doctorId}/activate", createdDoctor.getDoctorId())
+                .exchange()
+                .expectStatus().isOk();
+
+        webTestClient.get()
+                .uri("/api/v1/doctors/active/speciality/{specialityName}", "Cardiology")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[*].doctorId").value(doctorIds ->
+                        assertThat(doctorIds.toString()).contains(createdDoctor.getDoctorId()));
+    }
 }

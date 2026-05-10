@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 @Service
@@ -53,7 +55,7 @@ public class DoctorService {
 
         return execute(() -> webClient.post()
                 .uri(BASE_PATH)
-                .bodyValue(requestDTO)
+                .bodyValue(toDownstreamRequest(requestDTO))
                 .retrieve()
                 .bodyToMono(DoctorResponseDTO.class)
                 .block());
@@ -64,7 +66,7 @@ public class DoctorService {
 
         return execute(() -> webClient.put()
                 .uri(BASE_PATH + "/" + doctorId)
-                .bodyValue(requestDTO)
+                .bodyValue(toDownstreamRequest(requestDTO))
                 .retrieve()
                 .bodyToMono(DoctorResponseDTO.class)
                 .block());
@@ -171,5 +173,23 @@ public class DoctorService {
         } catch (WebClientResponseException ex) {
             throw WebClientErrorMapper.map("Doctor service", ex);
         }
+    }
+
+    private Map<String, Object> toDownstreamRequest(DoctorRequestDTO requestDTO) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("doctorFirstName", requestDTO.getDoctorFirstName());
+        payload.put("doctorLastName", requestDTO.getDoctorLastName());
+        payload.put("workZone", Map.of(
+                "city", requestDTO.getCity(),
+                "province", requestDTO.getProvince()
+        ));
+        payload.put(
+                "speciality",
+                List.of(Map.of(
+                        "speciality", requestDTO.getSpeciality().getSpeciality(),
+                        "proficiencyLevel", requestDTO.getSpeciality().getProficiencyLevel()
+                ))
+        );
+        return payload;
     }
 }

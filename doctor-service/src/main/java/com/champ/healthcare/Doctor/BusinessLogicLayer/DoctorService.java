@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -95,10 +94,7 @@ public class DoctorService {
     public List<DoctorResponseDTO> getActiveDoctorBySpeciality(String specialityName) {
         log.info("Fetching active doctors with speciality: {}", specialityName);
 
-        List<Speciality> specialities = new ArrayList<>();
-        specialities.add(new Speciality(specialityName, null));
-
-        return doctorRepository.findByIsActiveTrueAndSpecialityIn(specialities).stream()
+        return doctorRepository.findByIsActiveTrueAndSpeciality_SpecialityIgnoreCase(specialityName).stream()
                 .map(doctorMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }

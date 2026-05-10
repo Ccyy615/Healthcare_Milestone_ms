@@ -182,6 +182,9 @@ fi
 
 wait_for_service "$BASE_URL/actuator/health"
 
+request DELETE "/api/v1/appointments/999999"
+assertCurl 404 "Initial delete request validates docker environment"
+
 request POST "/api/v1/patients" '{
   "fullName": "Jordan Miles '"$RUN_SUFFIX"'",
   "dateOfBirth": "1990-05-01",
@@ -196,7 +199,7 @@ request POST "/api/v1/patients" '{
   "insuranceNumber": "INS-'"$RUN_SUFFIX"'",
   "substance": "Pollen",
   "reaction": "Sneezing",
-  "bloodType": "O+",
+  "bloodType": "O",
   "status": { "status": "ACTIVE" }
 }'
 assertCurl 201 "Create patient"
@@ -213,6 +216,32 @@ request GET "/api/v1/patients/patient-identifier/$PATIENT_IDENTIFIER"
 assertCurl 200 "Get patient by patient identifier"
 assert_contains "\"id\":$PATIENT_NUMERIC_ID" "Patient identifier lookup returns created patient"
 
+request PUT "/api/v1/patients/$PATIENT_NUMERIC_ID" "{
+  \"fullName\": \"Jordan Miles Updated $RUN_SUFFIX\",
+  \"dateOfBirth\": \"1990-05-01\",
+  \"gender\": \"F\",
+  \"email\": \"jordan.updated.$RUN_SUFFIX@example.com\",
+  \"phone\": \"514-555-0111\",
+  \"street\": \"2 Main\",
+  \"city\": \"Laval\",
+  \"province\": \"QC\",
+  \"postal_code\": \"H2H2H2\",
+  \"country\": \"Canada\",
+  \"insuranceNumber\": \"INS-$RUN_SUFFIX\",
+  \"substance\": \"Dust\",
+  \"reaction\": \"Coughing\",
+  \"bloodType\": \"O\",
+  \"status\": { \"status\": \"ACTIVE\" }
+}"
+assertCurl 200 "Update patient"
+assert_contains "\"fullName\":\"Jordan Miles Updated $RUN_SUFFIX\"" "Updated patient response contains new full name"
+
+request PATCH "/api/v1/patients/$PATIENT_NUMERIC_ID/status" '{
+  "status": "ACTIVE"
+}'
+assertCurl 200 "Patch patient status"
+assert_contains "\"status\":{\"status\":\"ACTIVE\"}" "Patient status patch keeps patient active"
+
 request POST "/api/v1/doctors" '{
   "doctorFirstName": "Avery",
   "doctorLastName": "Stone '"$RUN_SUFFIX"'",
@@ -220,7 +249,7 @@ request POST "/api/v1/doctors" '{
   "province": "QC",
   "speciality": {
     "speciality": "Cardiology",
-    "proficiencyLevel": "Advanced"
+    "proficiencyLevel": "ADVANCED"
   }
 }'
 assertCurl 201 "Create doctor"
@@ -232,6 +261,19 @@ request GET "/api/v1/doctors/$DOCTOR_ID"
 assertCurl 200 "Get doctor by id"
 assert_contains "\"doctorId\":\"$DOCTOR_ID\"" "Doctor lookup returns created doctor"
 
+request PUT "/api/v1/doctors/$DOCTOR_ID" "{
+  \"doctorFirstName\": \"Avery\",
+  \"doctorLastName\": \"Stone Updated $RUN_SUFFIX\",
+  \"city\": \"Quebec City\",
+  \"province\": \"QC\",
+  \"speciality\": {
+    \"speciality\": \"Cardiology\",
+    \"proficiencyLevel\": \"EXPERT\"
+  }
+}"
+assertCurl 200 "Update doctor"
+assert_contains "\"doctorLastName\":\"Stone Updated $RUN_SUFFIX\"" "Updated doctor response contains new last name"
+
 request POST "/api/v1/doctors/$DOCTOR_ID/license" '{
   "licenseName": "General Practice License",
   "status": "VALID"
@@ -242,6 +284,14 @@ assert_contains "\"isValid\":true" "Doctor license flow marks doctor as valid"
 request POST "/api/v1/doctors/$DOCTOR_ID/activate"
 assertCurl 200 "Activate doctor"
 assert_contains "\"isActive\":true" "Doctor activation marks doctor as active"
+
+request GET "/api/v1/doctors/active"
+assertCurl 200 "Get active doctors"
+assert_contains "\"doctorId\":\"$DOCTOR_ID\"" "Active doctor list includes created doctor"
+
+request GET "/api/v1/doctors/active/speciality/Cardiology"
+assertCurl 200 "Get active doctors by speciality"
+assert_contains "\"doctorId\":\"$DOCTOR_ID\"" "Active speciality list includes created doctor"
 
 request POST "/api/v1/clinic-rooms" '{
   "roomName": "Consultation Room '"$RUN_SUFFIX"'",
@@ -263,6 +313,22 @@ assert_contains "\"roomId\":\"$ROOM_IDENTIFIER\"" "Clinic room lookup returns cr
 request GET "/api/v1/clinic-rooms/room-identifier/$ROOM_IDENTIFIER"
 assertCurl 200 "Get clinic room by room identifier"
 assert_contains "\"id\":$ROOM_NUMERIC_ID" "Clinic room identifier lookup returns created room"
+
+request PUT "/api/v1/clinic-rooms/$ROOM_NUMERIC_ID" "{
+  \"roomName\": \"Updated Consultation Room $RUN_SUFFIX\",
+  \"roomNumber\": \"20$RUN_SUFFIX\",
+  \"roomStatus\": {
+    \"roomStatus\": \"AVAILABLE\"
+  }
+}"
+assertCurl 200 "Update clinic room"
+assert_contains "\"roomName\":\"Updated Consultation Room $RUN_SUFFIX\"" "Updated clinic room response contains new room name"
+
+request PATCH "/api/v1/clinic-rooms/$ROOM_NUMERIC_ID/status" '{
+  "roomStatus": "AVAILABLE"
+}'
+assertCurl 200 "Patch clinic room status"
+assert_contains "\"roomStatus\":{\"roomStatus\":\"AVAILABLE\"}" "Clinic room status patch keeps room available"
 
 request POST "/api/v1/appointments" "{
   \"patientId\": \"$PATIENT_IDENTIFIER\",
@@ -329,6 +395,22 @@ request DELETE "/api/v1/appointments/$APPOINTMENT_ID"
 assertCurl 200 "Delete primary appointment"
 assert_contains "\"appointmentId\":$APPOINTMENT_ID" "Delete primary appointment response contains deleted identifier"
 APPOINTMENT_ID=""
+
+request DELETE "/api/v1/clinic-rooms/$ROOM_NUMERIC_ID"
+assertCurl 200 "Delete clinic room"
+assert_contains "\"roomId\":\"$ROOM_IDENTIFIER\"" "Delete clinic room response contains deleted room identifier"
+ROOM_NUMERIC_ID=""
+ROOM_IDENTIFIER=""
+
+request DELETE "/api/v1/doctors/$DOCTOR_ID"
+assertCurl 200 "Delete doctor"
+DOCTOR_ID=""
+
+request DELETE "/api/v1/patients/$PATIENT_NUMERIC_ID"
+assertCurl 200 "Delete patient"
+assert_contains "\"patientId\":\"$PATIENT_IDENTIFIER\"" "Delete patient response contains deleted patient identifier"
+PATIENT_NUMERIC_ID=""
+PATIENT_IDENTIFIER=""
 
 echo "All Milestone 2 gateway integration checks passed."
 

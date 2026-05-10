@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 @Service
@@ -69,7 +71,7 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
 
         return execute(() -> webClient.post()
                 .uri(BASE_PATH)
-                .bodyValue(requestDTO)
+                .bodyValue(toDownstreamRequest(requestDTO))
                 .retrieve()
                 .bodyToMono(ClinicRoomResponseDTO.class)
                 .block());
@@ -81,7 +83,7 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
 
         return execute(() -> webClient.put()
                 .uri(BASE_PATH + "/" + id)
-                .bodyValue(requestDTO)
+                .bodyValue(toDownstreamRequest(requestDTO))
                 .retrieve()
                 .bodyToMono(ClinicRoomResponseDTO.class)
                 .block());
@@ -116,5 +118,16 @@ public class ClinicRoomServiceImpl implements ClinicRoomService {
         } catch (WebClientResponseException ex) {
             throw WebClientErrorMapper.map("Clinic room service", ex);
         }
+    }
+
+    private Map<String, Object> toDownstreamRequest(ClinicRoomRequestDTO requestDTO) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("roomName", requestDTO.getRoomName());
+        payload.put("roomNumber", requestDTO.getRoomNumber());
+        payload.put(
+                "roomStatus",
+                requestDTO.getRoomStatus() != null ? requestDTO.getRoomStatus().getRoomStatus() : null
+        );
+        return payload;
     }
 }
