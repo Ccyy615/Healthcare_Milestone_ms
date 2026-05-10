@@ -9,8 +9,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.List;
@@ -18,22 +19,29 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "springdoc.api-docs.enabled=false",
+                "springdoc.swagger-ui.enabled=false"
+        }
+)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ClinicRoomControllerIntegrationTest {
 
     @LocalServerPort
     private int port;
 
-    @MockBean
+    @MockitoBean
     private AppointmentService appointmentService;
 
-    @MockBean
+    @MockitoBean
     private PatientService patientService;
 
-    @MockBean
+    @MockitoBean
     private DoctorService doctorService;
 
-    @MockBean
+    @MockitoBean
     private ClinicRoomService clinicRoomService;
 
     private WebTestClient webTestClient;
