@@ -2,14 +2,18 @@ package com.champ.healthcare.ApiGateway;
 
 import com.champ.healthcare.ApiGateway.Appointment.PresentationLayer.AppointmentRequestDTO;
 import com.champ.healthcare.ApiGateway.Appointment.PresentationLayer.AppointmentResponseDTO;
+import com.champ.healthcare.ApiGateway.Appointment.PresentationLayer.AppointmentModelAssembler;
 import com.champ.healthcare.ApiGateway.Clinic.PresentationLayer.ClinicRoomRequestDTO;
+import com.champ.healthcare.ApiGateway.Clinic.PresentationLayer.ClinicRoomModelAssembler;
 import com.champ.healthcare.ApiGateway.Clinic.PresentationLayer.ClinicRoomResponseDTO;
 import com.champ.healthcare.ApiGateway.Clinic.PresentationLayer.ClinicRoomStatusPatchDTO;
+import com.champ.healthcare.ApiGateway.Doctor.PresentationLayer.DoctorModelAssembler;
 import com.champ.healthcare.ApiGateway.Doctor.PresentationLayer.DoctorActivationPatchDTO;
 import com.champ.healthcare.ApiGateway.Doctor.PresentationLayer.DoctorRequestDTO;
 import com.champ.healthcare.ApiGateway.Doctor.PresentationLayer.DoctorResponseDTO;
 import com.champ.healthcare.ApiGateway.Doctor.PresentationLayer.LicenseRequestDTO;
 import com.champ.healthcare.ApiGateway.Doctor.PresentationLayer.SpecialityRequestDTO;
+import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientModelAssembler;
 import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientRequestDTO;
 import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientResponseDTO;
 import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientStatusPatchDTO;
@@ -20,6 +24,7 @@ import com.champ.healthcare.ApiGateway.utilities.GlobalExceptionHandler;
 import com.champ.healthcare.ApiGateway.utilities.InvalidInputException;
 import com.champ.healthcare.ApiGateway.utilities.ResourceNotFoundException;
 import com.champ.healthcare.ApiGateway.utilities.WebClientErrorMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.SpringApplication;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +34,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -79,6 +85,38 @@ class GatewaySupportCoverageTest {
         assertThat(conflict).isInstanceOf(ConflictException.class).hasMessage("duplicate doctor");
         assertThat(downstream).isInstanceOf(DownstreamServiceException.class)
                 .hasMessage("Clinic room service returned 500.");
+    }
+
+    @Test
+    void webClientErrorMapperHandlesBlankMissingAndNonJsonMessages() {
+        RuntimeException blankMessage = WebClientErrorMapper.map(
+                "Patient service",
+                exception(HttpStatus.BAD_REQUEST, "{\"message\":\"   \"}")
+        );
+        RuntimeException missingMessageField = WebClientErrorMapper.map(
+                "Patient service",
+                exception(HttpStatus.NOT_FOUND, "{\"error\":\"missing\"}")
+        );
+        RuntimeException plainTextBody = WebClientErrorMapper.map(
+                "Doctor service",
+                exception(HttpStatus.UNPROCESSABLE_ENTITY, "plain-text failure")
+        );
+
+        assertThat(blankMessage).isInstanceOf(InvalidInputException.class)
+                .hasMessage("Patient service returned 400.");
+        assertThat(missingMessageField).isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("{\"error\":\"missing\"}");
+        assertThat(plainTextBody).isInstanceOf(ConflictException.class)
+                .hasMessage("plain-text failure");
+    }
+
+    @Test
+    void webClientErrorMapperExtractMessageHandlesNullBodyAndNullMessageField() throws Exception {
+        Method extractMessage = WebClientErrorMapper.class.getDeclaredMethod("extractMessage", String.class);
+        extractMessage.setAccessible(true);
+
+        assertThat(extractMessage.invoke(null, new Object[]{null})).isNull();
+        assertThat(extractMessage.invoke(null, "{\"message\":null}")).isEqualTo("{\"message\":null}");
     }
 
     @Test
@@ -227,6 +265,111 @@ class GatewaySupportCoverageTest {
         assertThat(clinicRoomResponseDTO.getRoomId()).isEqualTo("room-1");
         assertThat(appointmentRequestDTO.getDescription()).isEqualTo("Annual checkup");
         assertThat(appointmentResponseDTO.getAppointmentId()).isEqualTo(10L);
+    }
+
+    @Test
+    void modelAssemblersReturnNullWhenInputIsNull() {
+        assertThat(new AppointmentModelAssembler().addLinks((AppointmentResponseDTO) null)).isNull();
+        assertThat(new PatientModelAssembler().addLinks((PatientResponseDTO) null)).isNull();
+        assertThat(new DoctorModelAssembler().addLinks((DoctorResponseDTO) null)).isNull();
+        assertThat(new ClinicRoomModelAssembler().addLinks((ClinicRoomResponseDTO) null)).isNull();
+    }
+
+    @Test
+    void patientResponseDtoUnpacksNestedAndScalarGatewayPayloads() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        PatientResponseDTO nested = objectMapper.readValue("""
+                {
+                  "id": 1,
+                  "patientId": { "patientId": "patient-1" },
+                  "fullName": "Jordan Miles",
+                  "contactInfo": { "email": "jordan@example.com", "phone": "514-555-0100" },
+                  "address": {
+                    "street": "1 Main",
+                    "city": "Montreal",
+                    "province": "QC",
+                    "postal_code": "H1H1H1",
+                    "country": "Canada"
+                  },
+                  "allergy": { "substance": "Pollen", "reaction": "Sneezing" },
+                  "bloodType": "O+",
+                  "status": { "status": "ACTIVE" }
+                }
+                """, PatientResponseDTO.class);
+
+        PatientResponseDTO scalar = objectMapper.readValue("""
+                {
+                  "id": 2,
+                  "patientId": "patient-2",
+                  "contactInfo": null,
+                  "address": null,
+                  "allergy": null,
+                  "bloodType": null,
+                  "status": "INACTIVE"
+                }
+                """, PatientResponseDTO.class);
+
+        PatientResponseDTO nullFields = objectMapper.readValue("""
+                {
+                  "id": 3,
+                  "patientId": { "patientId": null },
+                  "contactInfo": { "email": null, "phone": null },
+                  "address": {
+                    "street": null,
+                    "city": null,
+                    "province": null,
+                    "postal_code": null,
+                    "country": null
+                  },
+                  "allergy": { "substance": null, "reaction": null },
+                  "bloodType": null,
+                  "status": { "status": null }
+                }
+                """, PatientResponseDTO.class);
+
+        PatientResponseDTO explicitNullScalars = objectMapper.readValue("""
+                {
+                  "id": 4,
+                  "patientId": null,
+                  "status": null
+                }
+                """, PatientResponseDTO.class);
+
+        assertThat(nested.getPatientId()).isEqualTo("patient-1");
+        assertThat(nested.getEmail()).isEqualTo("jordan@example.com");
+        assertThat(nested.getPhone()).isEqualTo("514-555-0100");
+        assertThat(nested.getStreet()).isEqualTo("1 Main");
+        assertThat(nested.getCity()).isEqualTo("Montreal");
+        assertThat(nested.getProvince()).isEqualTo("QC");
+        assertThat(nested.getPostal_code()).isEqualTo("H1H1H1");
+        assertThat(nested.getCountry()).isEqualTo("Canada");
+        assertThat(nested.getSubstance()).isEqualTo("Pollen");
+        assertThat(nested.getReaction()).isEqualTo("Sneezing");
+        assertThat(nested.getBloodType()).isEqualTo("O+");
+        assertThat(nested.getStatus().getStatus()).isEqualTo("ACTIVE");
+
+        assertThat(scalar.getPatientId()).isEqualTo("patient-2");
+        assertThat(scalar.getEmail()).isNull();
+        assertThat(scalar.getStreet()).isNull();
+        assertThat(scalar.getSubstance()).isNull();
+        assertThat(scalar.getBloodType()).isNull();
+        assertThat(scalar.getStatus().getStatus()).isEqualTo("INACTIVE");
+
+        assertThat(nullFields.getPatientId()).isNull();
+        assertThat(nullFields.getEmail()).isNull();
+        assertThat(nullFields.getPhone()).isNull();
+        assertThat(nullFields.getStreet()).isNull();
+        assertThat(nullFields.getCity()).isNull();
+        assertThat(nullFields.getProvince()).isNull();
+        assertThat(nullFields.getPostal_code()).isNull();
+        assertThat(nullFields.getCountry()).isNull();
+        assertThat(nullFields.getSubstance()).isNull();
+        assertThat(nullFields.getReaction()).isNull();
+        assertThat(nullFields.getStatus()).isNull();
+
+        assertThat(explicitNullScalars.getPatientId()).isNull();
+        assertThat(explicitNullScalars.getStatus()).isNull();
     }
 
     private WebClientResponseException exception(HttpStatus status, String body) {

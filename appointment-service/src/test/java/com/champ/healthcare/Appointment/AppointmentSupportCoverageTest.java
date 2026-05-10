@@ -72,6 +72,7 @@ class AppointmentSupportCoverageTest {
 
     @Test
     void mappersDomainHelpersAndDtosBehaveAsExpected() {
+        AppointmentMapper mapper = new AppointmentMapper();
         AppointmentRequestDTO appointmentRequestDTO = AppointmentRequestDTO.builder()
                 .patientId("patient-1")
                 .doctorId("doctor-1")
@@ -106,8 +107,23 @@ class AppointmentSupportCoverageTest {
                 .build();
         MedicalNote medicalNote = MedicalNoteMapper.toEntity(medicalNoteRequestDTO, appointment);
         MedicalNoteResponseDTO medicalNoteResponseDTO = MedicalNoteMapper.toResponseDTO(medicalNote);
+        AppointmentRequestDTO explicitStatusRequest = AppointmentRequestDTO.builder()
+                .patientId("patient-2")
+                .doctorId("doctor-2")
+                .roomId("room-2")
+                .status(AppointmentStatus.CANCELLED)
+                .startTime(LocalDateTime.of(2026, 5, 11, 9, 0))
+                .endTime(LocalDateTime.of(2026, 5, 11, 10, 0))
+                .description("Explicit status")
+                .build();
+        Appointment explicitStatusAppointment = AppointmentMapper.toEntity(explicitStatusRequest);
+        Appointment appointmentWithMissingOtherTimeSlot = Appointment.builder()
+                .timeSlot(new TimeSlot(LocalDateTime.of(2026, 5, 10, 12, 0), LocalDateTime.of(2026, 5, 10, 13, 0)))
+                .build();
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
+        assertThat(mapper).isNotNull();
+        assertThat(explicitStatusAppointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
         assertThat(appointmentResponseDTO.getPatientId()).isEqualTo("patient-1");
         assertThat(appointmentWithoutStatusOrSlot.getStatus()).isNull();
         assertThat(appointmentWithoutStatusOrSlot.getStartTime()).isNull();
@@ -116,6 +132,7 @@ class AppointmentSupportCoverageTest {
         assertThat(appointment.overlapsWith(otherAppointment)).isTrue();
         assertThat(appointment.overlapsWith(null)).isFalse();
         assertThat(Appointment.builder().build().overlapsWith(otherAppointment)).isFalse();
+        assertThat(appointmentWithMissingOtherTimeSlot.overlapsWith(Appointment.builder().build())).isFalse();
         assertThatThrownBy(() -> Appointment.builder().build().validateTimeSlot())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Appointment time slot is required.");
@@ -125,6 +142,12 @@ class AppointmentSupportCoverageTest {
         assertThat(new TimeSlot(LocalDateTime.of(2026, 5, 10, 11, 0), LocalDateTime.of(2026, 5, 10, 12, 0))
                 .overlaps(new TimeSlot(LocalDateTime.of(2026, 5, 10, 9, 0), LocalDateTime.of(2026, 5, 10, 10, 0))))
                 .isFalse();
+        assertThatThrownBy(() -> new TimeSlot(LocalDateTime.now(), null).validate())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Start time and end time are required.");
+        assertThat(new TimeSlot(LocalDateTime.of(2026, 5, 10, 11, 0), LocalDateTime.of(2026, 5, 10, 12, 0))
+                .overlaps(new TimeSlot(LocalDateTime.of(2026, 5, 10, 12, 0), LocalDateTime.of(2026, 5, 10, 13, 0))))
+                .isFalse();
         assertThat(MedicalNoteMapper.toResponseDTOList(List.of(medicalNote))).hasSize(1);
         assertThat(MedicalNoteMapper.toResponseDTO(null)).isNull();
         assertThat(MedicalNoteMapper.toResponseDTO(MedicalNote.builder().build()).getAppointmentId()).isNull();
@@ -133,6 +156,7 @@ class AppointmentSupportCoverageTest {
         assertThat(medicalNoteRequestDTO.getAppointmentId()).isEqualTo(1L);
         assertThat(appointmentResponseDTO.getStartTime()).isEqualTo(LocalDateTime.of(2026, 5, 10, 9, 0));
         assertThat(new DoctorClientResponse("doctor-2", null, "Stone", true, true).fullName()).isEqualTo("Stone");
+        assertThat(new DoctorClientResponse("doctor-3", "Avery", null, true, true).fullName()).isEqualTo("Avery");
         assertThat(new PatientClientResponse(2L, null, "Taylor", null, "ACTIVE").patientIdentifier()).isNull();
         assertThat(new PatientClientResponse(2L, null, "Taylor", null, "ACTIVE").email()).isNull();
         assertThatThrownBy(() -> new TimeSlot(LocalDateTime.now(), LocalDateTime.now().minusHours(1)).validate())

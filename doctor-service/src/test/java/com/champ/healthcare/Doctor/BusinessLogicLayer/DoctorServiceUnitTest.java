@@ -329,6 +329,25 @@ class DoctorServiceUnitTest {
     }
 
     @Test
+    void addLicenseUnverifiesDoctorWhenLicenseIsNotValid() {
+        Doctor doctor = doctor("doctor-1");
+        doctor.setIsValid(true);
+        LicenseRequestDTO requestDTO = new LicenseRequestDTO();
+        requestDTO.setLicenseName("Expired License");
+        requestDTO.setStatus(LicenseStatus.EXPIRED);
+        DoctorResponseDTO response = response("doctor-1");
+
+        when(doctorRepository.findByDoctorId_DoctorId("doctor-1")).thenReturn(Optional.of(doctor));
+        when(doctorRepository.save(doctor)).thenReturn(doctor);
+        when(doctorMapper.toResponseDTO(doctor)).thenReturn(response);
+
+        DoctorResponseDTO result = doctorService.addLicense("doctor-1", requestDTO);
+
+        assertThat(result).isSameAs(response);
+        assertThat(doctor.getIsValid()).isFalse();
+    }
+
+    @Test
     void addLicenseCreatesAndAssignsLicense() {
         Doctor doctor = doctor("doctor-1");
         LicenseRequestDTO requestDTO = new LicenseRequestDTO();

@@ -73,6 +73,28 @@ class PatientServiceImplTest {
     }
 
     @Test
+    void getPatientByPatientIdentifierThrowsWhenMissing() {
+        when(patientRepository.findByPatientId_PatientId("patient-99")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> patientService.getPatientByPatientIdentifier("patient-99"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Patient not found with patientId: patient-99");
+    }
+
+    @Test
+    void getPatientByPatientIdentifierReturnsMappedPatient() {
+        Patient patient = patient(5L, "identifier@example.com");
+        PatientResponseDTO response = response(5L, "identifier@example.com");
+
+        when(patientRepository.findByPatientId_PatientId("patient-5")).thenReturn(Optional.of(patient));
+        when(patientMapper.toResponseDTO(patient)).thenReturn(response);
+
+        PatientResponseDTO result = patientService.getPatientByPatientIdentifier("patient-5");
+
+        assertThat(result).isSameAs(response);
+    }
+
+    @Test
     void createPatientThrowsWhenContactInfoIsMissing() {
         PatientRequestDTO request = validRequest();
         request.setContactInfo(null);

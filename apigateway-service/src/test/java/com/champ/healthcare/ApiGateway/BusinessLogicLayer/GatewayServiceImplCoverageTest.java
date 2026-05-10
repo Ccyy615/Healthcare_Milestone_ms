@@ -17,6 +17,7 @@ import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientRequestD
 import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientResponseDTO;
 import com.champ.healthcare.ApiGateway.Patient.PresentationLayer.PatientStatusPatchDTO;
 import com.champ.healthcare.ApiGateway.utilities.InvalidInputException;
+import com.champ.healthcare.ApiGateway.utilities.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
@@ -139,6 +140,18 @@ class GatewayServiceImplCoverageTest {
     }
 
     @Test
+    void clinicRoomServiceMapsDownstreamErrors() {
+        ClinicRoomServiceImpl failingService = new ClinicRoomServiceImpl(
+                builder(requestSpec -> jsonResponse(HttpStatus.BAD_REQUEST, "{\"message\":\"bad room request\"}")),
+                "http://clinic-room-service"
+        );
+
+        assertThatThrownBy(() -> failingService.getAllRooms())
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessageContaining("bad room request");
+    }
+
+    @Test
     void appointmentServiceCoversCrudAndStateTransitions() throws Exception {
         AppointmentResponseDTO appointment = appointmentResponse();
         AppointmentRequestDTO request = appointmentRequest();
@@ -182,6 +195,18 @@ class GatewayServiceImplCoverageTest {
         assertThat(appointmentService.deleteAppointment(10L).getRoomId()).isEqualTo("room-1");
         assertThat(appointmentService.completeAppointment(10L).getStatus()).isEqualTo("CONFIRMED");
         assertThat(appointmentService.cancelAppointment(10L).getRoomStatus()).isEqualTo("AVAILABLE");
+    }
+
+    @Test
+    void appointmentServiceMapsDownstreamErrors() {
+        AppointmentServiceImpl failingService = new AppointmentServiceImpl(
+                builder(requestSpec -> jsonResponse(HttpStatus.NOT_FOUND, "{\"message\":\"appointment missing\"}")),
+                "http://appointment-service"
+        );
+
+        assertThatThrownBy(() -> failingService.getAppointmentById(404L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("appointment missing");
     }
 
     @Test
@@ -254,6 +279,18 @@ class GatewayServiceImplCoverageTest {
         assertThat(doctorService.removeSpeciality("doctor-1", "Cardiology").getDoctorId()).isEqualTo("doctor-1");
         assertThat(doctorService.addLicense("doctor-1", licenseRequestDTO).getLicenseName()).isEqualTo("College");
         doctorService.deleteDoctor("doctor-1");
+    }
+
+    @Test
+    void doctorServiceMapsDownstreamErrors() {
+        DoctorService failingService = new DoctorService(
+                builder(requestSpec -> jsonResponse(HttpStatus.BAD_REQUEST, "{\"message\":\"bad doctor request\"}")),
+                "http://doctor-service"
+        );
+
+        assertThatThrownBy(() -> failingService.getAllDoctors())
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessageContaining("bad doctor request");
     }
 
     private WebClient.Builder builder(Function<ClientRequest, ClientResponse> responder) {

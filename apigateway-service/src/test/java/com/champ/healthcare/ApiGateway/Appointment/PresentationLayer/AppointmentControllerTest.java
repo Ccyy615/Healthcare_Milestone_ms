@@ -63,6 +63,72 @@ class AppointmentControllerTest {
     }
 
     @Test
+    void getAppointmentByIdReturnsOkResponse() {
+        AppointmentResponseDTO appointment = appointmentResponse();
+        when(appointmentService.getAppointmentById(10L)).thenReturn(appointment);
+
+        ResponseEntity<AppointmentResponseDTO> response = appointmentController.getAppointmentById(10L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getRequiredLink("self").getHref()).contains("/api/v1/appointments/10");
+    }
+
+    @Test
+    void getAppointmentsByDoctorIdReturnsOkResponse() {
+        when(appointmentService.getAppointmentsByDoctorId("doctor-1")).thenReturn(List.of(appointmentResponse()));
+
+        ResponseEntity<List<AppointmentResponseDTO>> response = appointmentController.getAppointmentsByDoctorId("doctor-1");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1);
+    }
+
+    @Test
+    void updateAppointmentReturnsOkResponse() {
+        AppointmentRequestDTO request = AppointmentRequestDTO.builder()
+                .patientId("patient-1")
+                .doctorId("doctor-1")
+                .roomId("room-1")
+                .build();
+        when(appointmentService.updateAppointment(10L, request)).thenReturn(appointmentResponse());
+
+        ResponseEntity<AppointmentResponseDTO> response = appointmentController.updateAppointment(10L, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getRequiredLink("update").getHref()).contains("/api/v1/appointments/10");
+    }
+
+    @Test
+    void deleteAppointmentReturnsOkResponse() {
+        when(appointmentService.deleteAppointment(10L)).thenReturn(appointmentResponse());
+
+        ResponseEntity<AppointmentResponseDTO> response = appointmentController.deleteAppointment(10L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getRequiredLink("delete").getHref()).contains("/api/v1/appointments/10");
+    }
+
+    @Test
+    void completeAppointmentReturnsOkResponse() {
+        when(appointmentService.completeAppointment(10L)).thenReturn(appointmentResponse());
+
+        ResponseEntity<AppointmentResponseDTO> response = appointmentController.completeAppointment(10L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getRequiredLink("complete").getHref()).contains("/api/v1/appointments/10/complete");
+    }
+
+    @Test
+    void cancelAppointmentReturnsOkResponse() {
+        when(appointmentService.cancelAppointment(10L)).thenReturn(appointmentResponse());
+
+        ResponseEntity<AppointmentResponseDTO> response = appointmentController.cancelAppointment(10L);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getRequiredLink("cancel").getHref()).contains("/api/v1/appointments/10/cancel");
+    }
+
+    @Test
     void getAppointmentByIdPropagatesNegativePath() {
         when(appointmentService.getAppointmentById(404L)).thenThrow(new ResourceNotFoundException("missing appointment"));
 

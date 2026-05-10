@@ -77,6 +77,28 @@ class ClinicRoomServiceImplTest {
     }
 
     @Test
+    void getRoomByRoomIdThrowsWhenRoomDoesNotExist() {
+        when(clinicRoomRepository.findByRoomId_RoomId("room-99")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clinicRoomService.getRoomByRoomId("room-99"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Clinic room not found with roomId: room-99");
+    }
+
+    @Test
+    void getRoomByRoomIdReturnsMappedRoom() {
+        ClinicRoom room = room(4L, "104");
+        ClinicRoomResponseDTO response = response(4L, "104");
+
+        when(clinicRoomRepository.findByRoomId_RoomId("room-4")).thenReturn(Optional.of(room));
+        when(clinicRoomMapper.toResponseDTO(room)).thenReturn(response);
+
+        ClinicRoomResponseDTO result = clinicRoomService.getRoomByRoomId("room-4");
+
+        assertThat(result).isSameAs(response);
+    }
+
+    @Test
     void createRoomThrowsWhenRequestIsInvalid() {
         ClinicRoomRequestDTO request = ClinicRoomRequestDTO.builder()
                 .roomName(" ")

@@ -252,6 +252,75 @@ class AppointmentServiceImplTest {
     }
 
     @Test
+    void updateAppointmentPreservesExistingStatusWhenRequestStatusIsNull() {
+        AppointmentRequestDTO request = appointmentRequest();
+        request.setStatus(null);
+        Appointment existing = existingAppointment(10L, AppointmentStatus.CONFIRMED);
+
+        when(appointmentRepository.findByAppointmentId(10L)).thenReturn(java.util.Optional.of(existing));
+        when(patientServiceClient.getPatientByPatientIdentifier("patient-1")).thenReturn(activePatient());
+        when(doctorServiceClient.getDoctorByDoctorId("doctor-1")).thenReturn(eligibleDoctor());
+        when(clinicRoomServiceClient.getRoomByRoomId("room-1")).thenReturn(availableRoom());
+        when(appointmentRepository.existsByRoomIdAndTimeSlot_StartTimeLessThanAndTimeSlot_EndTimeGreaterThanAndAppointmentIdNot(
+                "room-1",
+                request.getEndTime(),
+                request.getStartTime(),
+                10L
+        )).thenReturn(false);
+        when(appointmentRepository.save(existing)).thenReturn(existing);
+
+        AppointmentResponseDTO response = appointmentService.updateAppointment(10L, request);
+
+        assertThat(existing.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
+        assertThat(response.getStatus()).isEqualTo("CONFIRMED");
+    }
+
+    @Test
+    void createAppointmentThrowsWhenPatientIdIsNull() {
+        AppointmentRequestDTO request = appointmentRequest();
+        request.setPatientId(null);
+
+        assertThatThrownBy(() -> appointmentService.createAppointment(request))
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessage("Patient ID is required.");
+    }
+
+    @Test
+    void createAppointmentThrowsWhenDoctorIdIsNull() {
+        AppointmentRequestDTO request = appointmentRequest();
+        request.setDoctorId(null);
+
+        assertThatThrownBy(() -> appointmentService.createAppointment(request))
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessage("Doctor ID is required.");
+    }
+
+    @Test
+    void createAppointmentThrowsWhenRoomIdIsNull() {
+        AppointmentRequestDTO request = appointmentRequest();
+        request.setRoomId(null);
+
+        assertThatThrownBy(() -> appointmentService.createAppointment(request))
+                .isInstanceOf(InvalidInputException.class)
+                .hasMessage("Room ID is required.");
+    }
+
+    @Test
+    void createAppointmentThrowsWhenDoctorIsActiveButUnverified() {
+        AppointmentRequestDTO request = appointmentRequest();
+
+        when(patientServiceClient.getPatientByPatientIdentifier("patient-1")).thenReturn(activePatient());
+        when(doctorServiceClient.getDoctorByDoctorId("doctor-1")).thenReturn(
+                new DoctorClientResponse("doctor-1", "Avery", "Stone", true, false)
+        );
+        when(clinicRoomServiceClient.getRoomByRoomId("room-1")).thenReturn(availableRoom());
+
+        assertThatThrownBy(() -> appointmentService.createAppointment(request))
+                .isInstanceOf(DoctorNotEligibleException.class)
+                .hasMessage("Doctor doctor-1 must be active and verified before an appointment can be scheduled.");
+    }
+
+    @Test
     void updateAppointmentThrowsWhenRoomAlreadyBooked() {
         AppointmentRequestDTO request = appointmentRequest();
         Appointment existing = existingAppointment(10L, AppointmentStatus.CONFIRMED);
@@ -270,6 +339,15 @@ class AppointmentServiceImplTest {
         assertThatThrownBy(() -> appointmentService.updateAppointment(10L, request))
                 .isInstanceOf(AppointmentConflictException.class)
                 .hasMessage("Cannot create or update appointment: the clinic room is already booked for this time slot.");
+    }
+
+    @Test
+    void updateAppointmentThrowsWhenAppointmentDoesNotExist() {
+        when(appointmentRepository.findByAppointmentId(404L)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> appointmentService.updateAppointment(404L, appointmentRequest()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Appointment not found with ID: 404");
     }
 
     @Test

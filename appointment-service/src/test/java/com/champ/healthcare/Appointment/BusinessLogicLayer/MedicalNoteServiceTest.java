@@ -86,6 +86,26 @@ class MedicalNoteServiceTest {
     }
 
     @Test
+    void createNotePreservesProvidedCreatedAt() {
+        Appointment appointment = existingAppointment(10L);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 5, 1, 10, 0);
+        MedicalNoteRequestDTO request = noteRequest(10L);
+        request.setCreatedAt(createdAt);
+
+        when(appointmentRepository.findByAppointmentId(10L)).thenReturn(Optional.of(appointment));
+        when(medicalNoteRepository.save(org.mockito.ArgumentMatchers.any(MedicalNote.class)))
+                .thenAnswer(invocation -> {
+                    MedicalNote note = invocation.getArgument(0);
+                    note.setNoteId(2L);
+                    return note;
+                });
+
+        MedicalNoteResponseDTO response = medicalNoteService.createNote(request);
+
+        assertThat(response.getCreatedAt()).isEqualTo(createdAt);
+    }
+
+    @Test
     void createNoteThrowsWhenAppointmentDoesNotExist() {
         when(appointmentRepository.findByAppointmentId(10L)).thenReturn(Optional.empty());
 
@@ -145,6 +165,34 @@ class MedicalNoteServiceTest {
         assertThatThrownBy(() -> medicalNoteService.updateNote(1L, noteRequest(11L)))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Appointment not found with ID: 11");
+    }
+
+    @Test
+    void updateNoteAssignsAppointmentWhenExistingNoteHasNoAppointment() {
+        MedicalNote existingNote = existingNote(1L, null);
+        Appointment reassignedAppointment = existingAppointment(10L);
+
+        when(medicalNoteRepository.findByNoteId(1L)).thenReturn(Optional.of(existingNote));
+        when(appointmentRepository.findByAppointmentId(10L)).thenReturn(Optional.of(reassignedAppointment));
+        when(medicalNoteRepository.save(existingNote)).thenReturn(existingNote);
+
+        MedicalNoteResponseDTO response = medicalNoteService.updateNote(1L, noteRequest(10L));
+
+        assertThat(existingNote.getAppointment()).isSameAs(reassignedAppointment);
+        assertThat(response.getAppointmentId()).isEqualTo(10L);
+    }
+
+    @Test
+    void updateNoteSkipsAppointmentLookupWhenRequestAppointmentIdIsNull() {
+        MedicalNote existingNote = existingNote(1L, existingAppointment(10L));
+        MedicalNoteRequestDTO request = noteRequest(null);
+
+        when(medicalNoteRepository.findByNoteId(1L)).thenReturn(Optional.of(existingNote));
+        when(medicalNoteRepository.save(existingNote)).thenReturn(existingNote);
+
+        MedicalNoteResponseDTO response = medicalNoteService.updateNote(1L, request);
+
+        assertThat(response.getAppointmentId()).isEqualTo(10L);
     }
 
     @Test
